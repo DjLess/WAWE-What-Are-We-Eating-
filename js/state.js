@@ -49,5 +49,6 @@ export let state = {
   finishedDishes: [],
   isAnimating: false,
   sortScoreAscending: false,
-  selectedDeckType: 'regular'
+  selectedDeckType: 'regular',
+  reduceMotion: false
 };

@@ -67,16 +67,31 @@
     <button class="btn btn-secondary" id="ui-btn-back-start" style="font-size: 0.95rem; padding: 10px; flex: unset; width: 100%;">Back</button>
   </div>
 
-  <!-- HUD Header -->
-  <div class="hud">
-    <div class="hud-box"><div class="hud-label">Target Pts</div><div class="hud-value" id="ui-target-score">0</div></div>
-    <div class="hud-box"><div class="hud-label">Dishes Goal</div><div class="hud-value" id="ui-target-dishes">0/0</div></div>
-    <div class="hud-box"><div class="hud-label">Score</div><div class="hud-value" id="ui-score">0</div></div>
-    <div class="hud-box"><div class="hud-label">Hands</div><div class="hud-value" id="ui-hands">0</div></div>
-    <div class="hud-box"><div class="hud-label">Discards</div><div class="hud-value" id="ui-discards">0</div></div>
+  <!-- Top Bar: Options / Run Info -->
+  <div class="top-bar">
+    <button class="icon-btn" id="ui-btn-options">⚙️ Options</button>
+    <button class="icon-btn" id="ui-btn-runinfo">ℹ️ Run Info</button>
   </div>
 
-  <!-- Slots Bar for Kitchenware (3), Diets (2), and Skills (2) - Stretched to full screen width -->
+  <!-- HUD Header -->
+  <div class="hud">
+    <div class="hud-level-panel">
+      <div class="hud-level-title">Level <span id="ui-level-num">1</span></div>
+      <div class="hud-level-sub">Score at least <span id="ui-target-score">0</span></div>
+      <div class="hud-level-sub">Prep goal: <span id="ui-target-dishes">0/0</span> Dishes</div>
+    </div>
+    <div class="hud-score-panel">
+      <div class="hud-score-label">Round Score</div>
+      <div class="hud-score-value" id="ui-score">0</div>
+    </div>
+    <div class="hud-stats-panel">
+      <div class="hud-stat"><div class="hud-stat-label">Hands</div><div class="hud-stat-value" id="ui-hands">0</div></div>
+      <div class="hud-stat"><div class="hud-stat-label">Discards</div><div class="hud-stat-value" id="ui-discards">0</div></div>
+      <div class="hud-stat"><div class="hud-stat-label">Forks</div><div class="hud-stat-value" id="ui-forks">🍴 0</div></div>
+    </div>
+  </div>
+
+  <!-- Slots Bar for Kitchenware (3) and Diets (2) -->
   <div class="slots-bar">
     <div class="slot-group">
       <div class="slot-group-title">Kitchenware</div>
@@ -86,15 +101,6 @@
       <div class="slot-group-title">Diets</div>
       <div class="slots-row" id="ui-diet-slots"></div>
     </div>
-    <div class="slot-group">
-      <div class="slot-group-title">Chef Skills</div>
-      <div class="slots-row" id="ui-skill-slots"></div>
-    </div>
-  </div>
-
-  <div class="top-utility-bar">
-    <div style="font-size:0.95rem; font-weight:bold; color:var(--panel-wood);" id="ui-forks">🍴 0</div>
-    <button class="btn-recipe-book" id="ui-open-recipes-btn">📖 Recipes</button>
   </div>
 
   <!-- Stage Area -->
@@ -105,18 +111,7 @@
       <div class="shelf-dishes" id="ui-dish-shelf"></div>
     </div>
 
-    <!-- Kitchen Props -->
-    <div class="kitchen-props">
-      <!-- Refrigerator Deck -->
-      <div class="fridge-deck" id="ui-fridge">
-        <div class="fridge-handle"></div>
-        <div class="fridge-icon" id="ui-fridge-icon">🧊</div>
-        <div class="fridge-count" id="ui-deck-count">0</div>
-      </div>
-
-      <!-- Trash Bin -->
-      <div class="trash-bin" id="ui-trash">🗑️</div>
-    </div>
+    <div class="prep-area-label">Prep Area</div>
 
     <!-- Cutting Board Area -->
     <div class="cutting-board" id="ui-cooking-pot"></div>
@@ -130,19 +125,36 @@
 
   <!-- Hand & Controls -->
   <div class="hand-container">
-    <div class="reorder-bar">
-      <button class="btn-sort" id="ui-sort-type-btn">Sort by Type</button>
-      <button class="btn-sort" id="ui-sort-score-btn">Sort by Score</button>
-    </div>
-
     <div class="hand-arc-wrapper">
       <div class="hand" id="ui-hand"></div>
     </div>
 
     <div class="actions">
-      <button class="btn btn-cook" id="ui-cook-btn" disabled>Cook</button>
       <button class="btn btn-discard" id="ui-discard-btn" disabled>Discard</button>
+      <div class="sort-mini-group">
+        <button class="btn-sort-icon" id="ui-sort-type-btn" aria-label="Sort by Type" title="Sort by Type">🔤</button>
+        <button class="btn-sort-icon" id="ui-sort-score-btn" aria-label="Sort by Score" title="Sort by Score">🔢</button>
+      </div>
+      <button class="btn btn-cook" id="ui-cook-btn" disabled>Cook</button>
     </div>
+  </div>
+
+  <!-- Bottom Utility Bar: Chef Skills, Fridge, Recipe Book, Trash -->
+  <div class="bottom-utility-bar">
+    <div class="slot-group">
+      <div class="slot-group-title">Chef Skills</div>
+      <div class="slots-row" id="ui-skill-slots"></div>
+    </div>
+
+    <div class="fridge-deck" id="ui-fridge">
+      <div class="fridge-handle"></div>
+      <div class="fridge-icon" id="ui-fridge-icon">🧊</div>
+      <div class="fridge-count" id="ui-deck-count">0</div>
+    </div>
+
+    <button class="btn-recipe-book" id="ui-open-recipes-btn">📖</button>
+
+    <div class="trash-bin" id="ui-trash" title="Discard selected cards">🗑️</div>
   </div>
 
   <!-- Recipe Book Modal -->
@@ -178,13 +190,32 @@
     <button class="btn btn-cook" id="ui-next-week-btn">Next Level</button>
   </div>
 
-  <!-- Card Description Popup Modal (Hold to View) -->
-  <div id="card-popup-modal" class="popup-overlay hidden">
-    <div class="popup-content">
-      <h3 id="popup-card-title">Card Title</h3>
-      <p id="popup-card-desc">Card description goes here...</p>
-      <button id="popup-close-btn" class="close-btn">Close</button>
+  <!-- Options Modal -->
+  <div class="modal hidden" id="ui-options-modal">
+    <div class="modal-header">⚙️ Options</div>
+    <div class="options-list">
+      <label class="option-row">
+        <span>Reduce Motion (faster animations)</span>
+        <input type="checkbox" id="ui-opt-reduce-motion" />
+      </label>
+      <button class="btn btn-secondary" id="ui-opt-restart-run">🔄 Restart Run</button>
     </div>
+    <button class="btn btn-cook" id="ui-close-options-btn">Close</button>
+  </div>
+
+  <!-- Run Info Modal -->
+  <div class="modal hidden" id="ui-runinfo-modal">
+    <div class="modal-header">ℹ️ Run Info</div>
+    <div class="runinfo-scroll" id="ui-runinfo-content"></div>
+    <button class="btn btn-cook" id="ui-close-runinfo-btn">Close</button>
+  </div>
+
+  <!-- Card Details Tooltip (Hold 2s to View) -->
+  <div id="card-popup-modal" class="card-tooltip hidden">
+    <div class="card-tooltip-arrow"></div>
+    <h3 id="popup-card-title">Card Title</h3>
+    <p id="popup-card-desc">Card description goes here...</p>
+    <div id="popup-card-effects" class="card-tooltip-effects"></div>
   </div>
 </div>
 

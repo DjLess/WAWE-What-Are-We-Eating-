@@ -22,6 +22,13 @@ import { LevelManager } from '../data/levels.js';
 import { bus } from '../eventBus.js';
 import { getCategoryLetter, shuffle, sleep } from '../utils.js';
 
+// Envuelve sleep() y respeta la opcion "Reduce Motion" de Options: acorta
+// (no elimina) las pausas de animacion para que la coreografia siga siendo
+// legible pero mucho mas rapida.
+function wait(ms) {
+  return sleep(state.reduceMotion ? Math.min(ms, 40) : ms);
+}
+
 export function initGameScreen() {
   bus.on('game:start', ({ deckType }) => {
     state.selectedDeckType = deckType;
@@ -76,15 +83,45 @@ export function initGameScreen() {
     bus.emit('shop:open');
   };
 
-  document.getElementById("popup-close-btn").addEventListener("click", () => {
-    document.getElementById("card-popup-modal").classList.add("hidden");
-  });
+  // El basurero es un atajo visual para "Discard" (misma accion que el boton).
+  document.getElementById('ui-trash').onclick = () => discardSelected();
 
-  document.getElementById("card-popup-modal").addEventListener("click", (e) => {
-    if (e.target === document.getElementById("card-popup-modal")) {
-      document.getElementById("card-popup-modal").classList.add("hidden");
-    }
-  });
+  // --- Options ---
+  const reduceMotionCheckbox = document.getElementById('ui-opt-reduce-motion');
+  reduceMotionCheckbox.checked = state.reduceMotion;
+  reduceMotionCheckbox.onchange = () => {
+    state.reduceMotion = reduceMotionCheckbox.checked;
+  };
+
+  document.getElementById('ui-btn-options').onclick = () => {
+    document.getElementById('ui-options-modal').classList.remove('hidden');
+  };
+
+  document.getElementById('ui-close-options-btn').onclick = () => {
+    document.getElementById('ui-options-modal').classList.add('hidden');
+  };
+
+  document.getElementById('ui-opt-restart-run').onclick = () => {
+    if (!confirm("Restart your current run from Level 1? Your Forks, Kitchenware, Diets and Skills will be lost.")) return;
+    state.week = 1;
+    state.forks = 0;
+    state.kitchenware = [];
+    state.activeDiets = [];
+    state.chefSkills = [];
+    document.getElementById('ui-options-modal').classList.add('hidden');
+    document.getElementById('ui-shop').classList.add('hidden');
+    initGame();
+  };
+
+  // --- Run Info ---
+  document.getElementById('ui-btn-runinfo').onclick = () => {
+    renderRunInfo();
+    document.getElementById('ui-runinfo-modal').classList.remove('hidden');
+  };
+
+  document.getElementById('ui-close-runinfo-btn').onclick = () => {
+    document.getElementById('ui-runinfo-modal').classList.add('hidden');
+  };
 }
 
   function applyDeckType(deckType) {
@@ -356,7 +393,7 @@ export function initGameScreen() {
           lastCard.classList.add('fly-draw-anim');
         }
         updateHUD();
-        await sleep(80);
+        await wait(80);
       }
     }
 
@@ -368,6 +405,7 @@ export function initGameScreen() {
   }
 
   function updateHUD() {
+    document.getElementById('ui-level-num').innerText = state.week;
     document.getElementById('ui-target-score').innerText = state.targetScore;
     document.getElementById('ui-target-dishes').innerText = `${state.finishedDishes.length}/${state.targetDishes}`;
     document.getElementById('ui-score').innerText = state.score;
@@ -394,12 +432,12 @@ export function initGameScreen() {
   }
 
   let holdTimer = null;
-  const HOLD_DURATION = 600;
+  const HOLD_DURATION = 2000;
 
   function setupCardHoldListener(cardElement, cardData) {
-    const startHold = (e) => {
+    const startHold = () => {
       holdTimer = setTimeout(() => {
-        showCardPopup(cardData);
+        showCardPopup(cardData, cardElement);
       }, HOLD_DURATION);
     };
 
@@ -408,21 +446,55 @@ export function initGameScreen() {
         clearTimeout(holdTimer);
         holdTimer = null;
       }
+      hideCardPopup();
     };
 
     cardElement.addEventListener("mousedown", startHold);
     cardElement.addEventListener("mouseup", cancelHold);
     cardElement.addEventListener("mouseleave", cancelHold);
-    
+
     cardElement.addEventListener("touchstart", startHold);
     cardElement.addEventListener("touchend", cancelHold);
     cardElement.addEventListener("touchmove", cancelHold);
   }
 
-  function showCardPopup(card) {
+  // Efectos actualmente aplicados a ESTA instancia de la carta (dinamico,
+  // distinto de la descripcion base del tipo de ingrediente).
+  function getCardEffectsLines(card) {
+    const lines = [];
+
+    if (card.state === 'frozen') lines.push(`🧊 Frozen — invalid this turn (${card.frozenTimer ?? 1} turn left)`);
+    if (card.state === 'rotten') lines.push(`💀 Rotten — invalid, will score 0`);
+    if (card.state === 'expiring') lines.push(`🔥 Expiring — must be used this turn`);
+    if (card.state === 'gourmet') lines.push(`✨ Gourmet — +0.5x Multiplier`);
+    if (card.multiplierBonus) lines.push(`⭐ Bonus — +${card.multiplierBonus}x Multiplier`);
+    if (card.state === 'expiring' && card.drawnThisTurn) lines.push(`🌱 Fresh Bonus — +25 Pts if cooked now`);
+
+    return lines;
+  }
+
+  function showCardPopup(card, anchorEl) {
     document.getElementById("popup-card-title").innerText = card.name;
     document.getElementById("popup-card-desc").innerText = card.description || `Category: ${card.type.toUpperCase()} | Points: +${card.points || 0}`;
-    document.getElementById("card-popup-modal").classList.remove("hidden");
+
+    const effectsEl = document.getElementById("popup-card-effects");
+    const effectLines = getCardEffectsLines(card);
+    effectsEl.innerHTML = effectLines.map(line => `<div class="effect-line">${line}</div>`).join('');
+
+    const tooltip = document.getElementById("card-popup-modal");
+    tooltip.classList.remove("hidden");
+
+    const rect = anchorEl.getBoundingClientRect();
+    tooltip.style.left = `${rect.left + rect.width / 2}px`;
+    tooltip.style.top = `${rect.top}px`;
+    // Se agrega en el siguiente frame para que la transicion de opacidad/transform se anime.
+    requestAnimationFrame(() => tooltip.classList.add("visible"));
+  }
+
+  function hideCardPopup() {
+    const tooltip = document.getElementById("card-popup-modal");
+    tooltip.classList.remove("visible");
+    tooltip.classList.add("hidden");
   }
 
   function renderHand() {
@@ -631,7 +703,7 @@ export function initGameScreen() {
       }
 
       potCardEl.classList.add('scoring-active');
-      await sleep(220);
+      await wait(220);
 
       const isCardValid = dish.validCardIndices.includes(i) && card.state !== 'frozen' && card.state !== 'rotten';
 
@@ -671,14 +743,14 @@ export function initGameScreen() {
         potCardEl.classList.add('fly-trash');
       }
 
-      await sleep(300);
+      await wait(300);
       bannerCalc.className = '';
       if (isCardValid) potCardEl.classList.remove('scoring-active');
     }
 
     potEl.classList.add('mixing-pot');
     bannerDish.innerText = "Cooking & Mixing... 🍳";
-    await sleep(650);
+    await wait(650);
     potEl.classList.remove('mixing-pot');
 
     potEl.innerHTML = '';
@@ -699,7 +771,7 @@ export function initGameScreen() {
     bannerCalc.className = 'score-pop';
     triggerFloatingText(`+${finalScore}!`, potEl);
 
-    await sleep(850);
+    await wait(850);
 
     if (accumulatedMult > 0) {
       addDishToShelf(dish.icon, dish.name, hasSpecialIngredient);
@@ -739,7 +811,7 @@ export function initGameScreen() {
       if (potCardEl) potCardEl.classList.add('fly-trash');
     });
 
-    await sleep(320);
+    await wait(320);
 
     state.discardsLeft -= 1;
     state.hand = state.hand.filter((_, idx) => !state.selectedIndices.includes(idx));
@@ -795,6 +867,43 @@ export function initGameScreen() {
       `;
       listEl.appendChild(item);
     });
+  }
+
+  function renderRunInfo() {
+    const contentEl = document.getElementById('ui-runinfo-content');
+    const activeItems = [...state.kitchenware, ...state.activeDiets, ...state.chefSkills];
+
+    let html = `<div class="runinfo-section-title">Active Bonuses</div>`;
+    if (activeItems.length === 0) {
+      html += `<div class="runinfo-empty-note">No Kitchenware, Diets or Chef Skills active yet — visit the Supermarket!</div>`;
+    } else {
+      activeItems.forEach(it => {
+        html += `
+          <div class="recipe-card">
+            <div style="font-size:1.6rem;">${it.icon}</div>
+            <div>
+              <div style="font-weight:bold; font-size:0.95rem;">${it.name}</div>
+              <div style="font-size:0.8rem; color:#666;">${it.desc || it.description || ''}</div>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    html += `<div class="runinfo-section-title">Dish Values</div>`;
+    RECIPE_BOOK.forEach(r => {
+      html += `
+        <div class="recipe-card">
+          <div style="font-size:1.6rem;">${r.icon}</div>
+          <div>
+            <div style="font-weight:bold; font-size:0.95rem;">${r.name} (${r.multiplier}x base)</div>
+            <div style="font-size:0.8rem; color:#666;">${r.basePoints} base pts — ${r.desc}</div>
+          </div>
+        </div>
+      `;
+    });
+
+    contentEl.innerHTML = html;
   }
 
   function renderDishesReview() {
