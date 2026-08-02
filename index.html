@@ -111,8 +111,6 @@
       <div class="shelf-dishes" id="ui-dish-shelf"></div>
     </div>
 
-    <div class="prep-area-label">Prep Area</div>
-
     <!-- Cutting Board Area -->
     <div class="cutting-board" id="ui-cooking-pot"></div>
 
@@ -168,8 +166,12 @@
   <!-- Level Complete Popup Modal -->
   <div class="modal hidden" id="ui-level-complete-modal">
     <div class="modal-header">🎉 Level Complete!</div>
-    <p style="text-align:center; font-size:1rem;" id="ui-complete-summary">You reached all level requirements!</p>
-    <div style="display:flex; flex-direction:column; gap:12px; margin-top:20px;">
+    <div class="level-summary-scroll" id="ui-complete-dish-list"></div>
+    <div class="level-summary-totals">
+      <div class="level-summary-row"><span>Score</span><span id="ui-complete-score-total">0</span></div>
+      <div class="level-summary-row forks-row"><span>Forks Earned</span><span id="ui-complete-forks-total">+0</span></div>
+    </div>
+    <div class="reveal-hidden" id="ui-complete-actions" style="display:flex; flex-direction:column; gap:12px; margin-top:8px;">
       <button class="btn btn-secondary" id="ui-btn-review-dishes">📜 Review Dishes</button>
       <button class="btn btn-cook" id="ui-btn-go-shop">🛒 Go to Supermarket</button>
     </div>
@@ -184,11 +186,39 @@
   </div>
 
   <!-- Supermarket Modal -->
-  <div class="modal hidden" id="ui-shop">
+  <div class="modal shop-modal hidden" id="ui-shop">
     <div class="modal-header">🛒 Supermarket</div>
-    <p style="text-align:center; font-size:0.95rem;" id="ui-shop-summary">Spend Forks on kitchenware, skills, diets & ingredients!</p>
-    <div class="shop-grid" id="ui-shop-items"></div>
-    <button class="btn btn-cook" id="ui-next-week-btn">Next Level</button>
+    <div class="shop-forks-display">🍴 <span id="ui-shop-forks">0</span> Forks</div>
+
+    <div class="shop-scroll">
+      <div class="shop-section">
+        <div class="shop-cols">
+          <div class="shop-subsection">
+            <div class="shop-subsection-title">Kitchenware</div>
+            <div class="shop-row" id="ui-shop-kitchenware"></div>
+          </div>
+          <div class="shop-subsection">
+            <div class="shop-subsection-title">Diets</div>
+            <div class="shop-row" id="ui-shop-diets"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="shop-section">
+        <div class="shop-subsection-title-row">
+          <div class="shop-subsection-title">Chef Skills</div>
+          <button class="btn-reroll" id="ui-shop-reroll-btn" title="Reroll Kitchenware, Diets & Chef Skills (1 Fork)">🎰</button>
+        </div>
+        <div class="shop-row" id="ui-shop-skills"></div>
+      </div>
+
+      <div class="shop-section">
+        <div class="shop-subsection-title">Ingredients Shelf</div>
+        <div class="shop-row shop-shelf-row" id="ui-shop-ingredients"></div>
+      </div>
+    </div>
+
+    <button class="btn btn-cook btn-medium" id="ui-next-week-btn">Next Level ➜</button>
   </div>
 
   <!-- Options Modal -->

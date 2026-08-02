@@ -565,7 +565,7 @@ export function initGameScreen() {
 
       const offset = idx - centerOffset;
       const angle = offset * angleStep;
-      const translateY = Math.abs(offset) * 4;
+      const translateY = Math.abs(offset) * 3;
 
       const cardStateClass = card.state ? `state-${card.state}` : '';
       cardEl.className = `card ${cardStateClass} ${isSelected ? 'selected' : ''}`;
@@ -827,7 +827,7 @@ export function initGameScreen() {
     await wait(850);
 
     if (accumulatedMult > 0) {
-      addDishToShelf(dish.icon, dish.name, hasSpecialIngredient);
+      addDishToShelf(dish.icon, dish.name, hasSpecialIngredient, finalScore);
     }
 
     state.score += finalScore;
@@ -845,14 +845,14 @@ export function initGameScreen() {
     checkLevelEnd();
   }
 
-  function addDishToShelf(icon, name, isSpecial) {
+  function addDishToShelf(icon, name, isSpecial, points) {
     const shelf = document.getElementById('ui-dish-shelf');
     const dishEl = document.createElement('div');
     dishEl.className = 'shelf-item';
     dishEl.innerHTML = `${icon}${isSpecial ? '<div class="special-badge">⭐</div>' : ''}`;
     shelf.appendChild(dishEl);
 
-    state.finishedDishes.push({ icon, name, isSpecial });
+    state.finishedDishes.push({ icon, name, isSpecial, points });
   }
 
   async function discardSelected() {
@@ -890,12 +890,7 @@ export function initGameScreen() {
       if (reachedDishes && reachedScore) {
         const extraDishes = Math.max(0, dishesCompleted - state.targetDishes);
         const bonusForks = 5 + (extraDishes * 2);
-        state.forks += bonusForks;
-
-        document.getElementById('ui-complete-summary').innerText = 
-          `Goals Reached: ${dishesCompleted}/${state.targetDishes} Dishes & ${state.score}/${state.targetScore} Pts. Bonus Forks earned: +${bonusForks}`;
-
-        document.getElementById('ui-level-complete-modal').classList.remove('hidden');
+        showLevelCompleteSummary(bonusForks);
       } else {
         alert(`Game Over! Both goals were not met.\nDishes: ${dishesCompleted}/${state.targetDishes} ${reachedDishes ? '✅' : '❌'}\nScore: ${state.score}/${state.targetScore} ${reachedScore ? '✅' : '❌'}`);
         state.week = 1;
@@ -906,6 +901,48 @@ export function initGameScreen() {
         initGame();
       }
     }
+  }
+
+  // Muestra la pantalla de fin de nivel revelando el puntaje de forma
+  // secuencial: un plato a la vez, con el total corriendo, y al final
+  // los Forks otorgados. Los botones de continuar solo aparecen cuando
+  // termina la secuencia, para que el jugador no salte el resumen sin verlo.
+  async function showLevelCompleteSummary(bonusForks) {
+    const modal = document.getElementById('ui-level-complete-modal');
+    const listEl = document.getElementById('ui-complete-dish-list');
+    const scoreTotalEl = document.getElementById('ui-complete-score-total');
+    const forksTotalEl = document.getElementById('ui-complete-forks-total');
+    const actionsEl = document.getElementById('ui-complete-actions');
+
+    listEl.innerHTML = '';
+    scoreTotalEl.innerText = '0';
+    forksTotalEl.innerText = '+0';
+    actionsEl.classList.add('reveal-hidden');
+    modal.classList.remove('hidden');
+
+    let runningScore = 0;
+    for (const dish of state.finishedDishes) {
+      const row = document.createElement('div');
+      row.className = 'level-summary-dish-row';
+      row.innerHTML = `<span>${dish.icon} ${dish.name}</span><span>+${dish.points}</span>`;
+      listEl.appendChild(row);
+      listEl.scrollTop = listEl.scrollHeight;
+
+      runningScore += dish.points;
+      scoreTotalEl.innerText = runningScore;
+      scoreTotalEl.parentElement.classList.add('score-pop');
+      await wait(180);
+      scoreTotalEl.parentElement.classList.remove('score-pop');
+    }
+
+    await wait(300);
+
+    state.forks += bonusForks;
+    forksTotalEl.innerText = `+${bonusForks}`;
+    forksTotalEl.parentElement.classList.add('score-pop');
+    await wait(500);
+
+    actionsEl.classList.remove('reveal-hidden');
   }
 
   function renderRecipes() {

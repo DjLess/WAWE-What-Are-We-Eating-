@@ -340,29 +340,32 @@
 
     .slot-group {
       display: flex;
-      flex-direction: column;
+      flex-direction: row;
       align-items: center;
+      gap: 4px;
       flex: 1;
     }
 
     .slot-group-title {
-      font-size: 0.55rem;
+      font-size: 0.6rem;
       text-transform: uppercase;
       color: var(--panel-wood);
       font-weight: 800;
-      margin-bottom: 3px;
+      writing-mode: vertical-lr;
+      transform: rotate(180deg);
+      white-space: nowrap;
+      flex-shrink: 0;
     }
 
     .slots-row {
       display: flex;
-      gap: 3px;
-      width: 100%;
-      justify-content: center;
+      gap: 4px;
+      justify-content: flex-start;
     }
 
     .slot-item {
-      width: 30px;
-      height: 38px;
+      width: 46px;
+      height: 58px;
       /* área táctil ampliada sin cambiar el tamaño visual */
       padding: 4px;
       background-clip: content-box;
@@ -371,12 +374,13 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.1rem;
+      font-size: 1.5rem;
       background-color: rgba(120, 120, 120, 0.12);
       cursor: pointer;
       position: relative;
       filter: grayscale(1);
       opacity: 0.55;
+      flex-shrink: 0;
       transition: filter 0.2s ease, opacity 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
     }
 
@@ -440,6 +444,7 @@
       padding: 0 8px;
       gap: 8px;
       box-shadow: inset 0 -4px 6px rgba(0,0,0,0.2);
+      margin-top: 14px;
     }
 
     .shelf-label {
@@ -475,17 +480,6 @@
       background: rgba(0,0,0,0.6);
       border-radius: 50%;
       padding: 1px;
-    }
-
-    .prep-area-label {
-      text-align: center;
-      font-size: 0.7rem;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--panel-wood);
-      opacity: 0.8;
-      margin: 4px 0 2px 0;
     }
 
     /* Bottom Utility Bar: Chef Skills, Fridge, Recipe Book, Trash */
@@ -598,7 +592,7 @@
       border-top: 4px solid #e0d0c0;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 18px;
       position: relative;
       z-index: 20;
     }
@@ -774,7 +768,7 @@
     }
 
     .btn:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0,0,0,0.15); }
-    .btn-cook { background: var(--counter-top); color: var(--panel-wood); border: 2px solid var(--panel-wood); }
+    .btn-cook { background: var(--accent-green); color: white; border: 2px solid #5a8a72; }
     .btn-discard { background: var(--accent-red); color: white; }
     .btn-secondary { background: #5a3e2b; color: white; }
     .btn:disabled { background: #ccc !important; opacity: 0.6; box-shadow: none; cursor: not-allowed; }
@@ -887,8 +881,182 @@
       gap: 10px;
     }
 
-    .shop-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
     .shop-item { flex-direction: column; justify-content: space-between; text-align: center; }
+
+    /* Supermarket: ambientacion de tienda (piso a rayas, secciones tipo pasillo) */
+    .shop-modal {
+      background:
+        repeating-linear-gradient(90deg, #ede4d6 0px, #ede4d6 40px, #e2d6c3 40px, #e2d6c3 80px);
+    }
+
+    .shop-forks-display {
+      text-align: center;
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #a3760e;
+      background: #fff8e7;
+      border: 2px dashed #d4a359;
+      border-radius: 10px;
+      padding: 6px;
+    }
+
+    .shop-scroll {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .shop-section {
+      background: rgba(255,255,255,0.6);
+      border: 2px solid #d8c9b0;
+      border-radius: 12px;
+      padding: 10px;
+    }
+
+    .shop-cols {
+      display: flex;
+      gap: 10px;
+    }
+
+    .shop-subsection { flex: 1; min-width: 0; }
+
+    .shop-subsection-title {
+      font-size: 0.72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--panel-wood);
+      border-bottom: 2px dashed #d8c9b0;
+      padding-bottom: 4px;
+      margin-bottom: 6px;
+    }
+
+    .shop-subsection-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .shop-subsection-title-row .shop-subsection-title {
+      margin-bottom: 0;
+      border-bottom: none;
+      padding-bottom: 0;
+      flex: 1;
+    }
+
+    .btn-reroll {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #ffd166;
+      border: 3px solid #b8860b;
+      font-size: 1.25rem;
+      cursor: pointer;
+      box-shadow: 0 3px 0 #8a6512;
+      flex-shrink: 0;
+    }
+
+    .btn-reroll:active {
+      transform: translateY(2px);
+      box-shadow: 0 1px 0 #8a6512;
+    }
+
+    .shop-row {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .shop-item-icon { font-size: 1.6rem; }
+    .shop-item-name { font-weight: 700; font-size: 0.78rem; margin-top: 2px; }
+    .shop-item-desc { font-size: 0.66rem; color: #666; margin: 2px 0 6px 0; min-height: 22px; }
+
+    .shop-buy-btn {
+      background: var(--accent-green);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 5px 8px;
+      font-family: var(--font-cozy);
+      font-weight: 700;
+      font-size: 0.76rem;
+      cursor: pointer;
+    }
+
+    .shop-buy-btn:disabled {
+      background: #ccc;
+      color: #888;
+      cursor: not-allowed;
+    }
+
+    .shop-item-bought { opacity: 0.55; }
+
+    .btn-medium {
+      align-self: center;
+      width: auto;
+      flex: none;
+      padding: 8px 30px;
+      font-size: 0.9rem;
+    }
+
+    /* Level Complete: resumen secuencial */
+    .level-summary-scroll {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .level-summary-dish-row {
+      display: flex;
+      justify-content: space-between;
+      background: #fff;
+      border: 2px solid #e0d0c0;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .level-summary-totals {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      border-top: 2px solid rgba(0,0,0,0.1);
+      padding-top: 10px;
+    }
+
+    .level-summary-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--panel-wood);
+    }
+
+    .level-summary-row.forks-row { color: #b8860b; }
+
+    .reveal-hidden {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease;
+    }
+
+    .score-pop {
+      animation: scorePop 0.3s ease;
+    }
+
+    @keyframes scorePop {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.25); }
+      100% { transform: scale(1); }
+    }
 
     /* Card Description Popup Modal (Hold 0.6s to View) */
     .popup-overlay {
