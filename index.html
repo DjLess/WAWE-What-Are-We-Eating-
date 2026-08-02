@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>What are we eating?</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div id="app-viewport">
+  <!-- Start Screen & Deck Selection -->
+  <div class="screen-overlay" id="ui-start-screen">
+    <div class="title-banner">
+      <h1 class="main-title">What are we eating?</h1>
+    </div>
+
+    <!-- Animation Showcase -->
+    <div class="start-animation-stage">
+      <div class="mini-fridge">
+        <div class="fridge-handle" style="top:22px; height:24px;"></div>
+        <div style="font-size:1.6rem;">🧊</div>
+      </div>
+      <div class="floating-preview-card">
+        <div style="font-size:0.6rem; color:#f39c12; font-weight:800;">C</div>
+        <div>🧀</div>
+        <div style="font-size:0.65rem; color:#777;">+15</div>
+      </div>
+    </div>
+
+    <button class="play-btn" id="ui-btn-goto-deck-select">Play Game</button>
+  </div>
+
+  <!-- Deck Selection Screen Overlay -->
+  <div class="screen-overlay hidden" id="ui-deck-screen">
+    <div class="title-banner" style="margin-top: 10px;">
+      <h2 class="main-title" style="font-size: 2rem;">Choose Your Deck</h2>
+      <div class="sub-title" style="font-size: 0.95rem;">Select your culinary style for this run</div>
+    </div>
+
+    <div class="deck-selection-container">
+      <div class="deck-option-card" id="deck-regular">
+        <div class="deck-icon">🃏</div>
+        <div class="deck-info">
+          <h3>Regular Deck</h3>
+          <p>The standard culinary mix featuring balanced carbs, vegetables, proteins, and spices.</p>
+        </div>
+      </div>
+
+      <div class="deck-option-card" id="deck-vegetarian">
+        <div class="deck-icon">🥗</div>
+        <div class="deck-info">
+          <h3>Vegetarian Deck</h3>
+          <p>Plant-based alternatives! Regular proteins are swapped for savory vegetarian replacements.</p>
+        </div>
+      </div>
+
+      <div class="deck-option-card" id="deck-special">
+        <div class="deck-icon">✨</div>
+        <div class="deck-info">
+          <h3>Specialty Deck</h3>
+          <p>High risk, high reward! All ingredients start with special modifiers (Frozen, Gourmet, Expiring).</p>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-secondary" id="ui-btn-back-start" style="font-size: 0.95rem; padding: 10px; flex: unset; width: 100%;">Back</button>
+  </div>
+
+  <!-- HUD Header -->
+  <div class="hud">
+    <div class="hud-box"><div class="hud-label">Target Pts</div><div class="hud-value" id="ui-target-score">0</div></div>
+    <div class="hud-box"><div class="hud-label">Dishes Goal</div><div class="hud-value" id="ui-target-dishes">0/0</div></div>
+    <div class="hud-box"><div class="hud-label">Score</div><div class="hud-value" id="ui-score">0</div></div>
+    <div class="hud-box"><div class="hud-label">Hands</div><div class="hud-value" id="ui-hands">0</div></div>
+    <div class="hud-box"><div class="hud-label">Discards</div><div class="hud-value" id="ui-discards">0</div></div>
+  </div>
+
+  <!-- Slots Bar for Kitchenware (3), Diets (2), and Skills (2) - Stretched to full screen width -->
+  <div class="slots-bar">
+    <div class="slot-group">
+      <div class="slot-group-title">Kitchenware</div>
+      <div class="slots-row" id="ui-kitchenware-slots"></div>
+    </div>
+    <div class="slot-group">
+      <div class="slot-group-title">Diets</div>
+      <div class="slots-row" id="ui-diet-slots"></div>
+    </div>
+    <div class="slot-group">
+      <div class="slot-group-title">Chef Skills</div>
+      <div class="slots-row" id="ui-skill-slots"></div>
+    </div>
+  </div>
+
+  <div class="top-utility-bar">
+    <div style="font-size:0.95rem; font-weight:bold; color:var(--panel-wood);" id="ui-forks">🍴 0</div>
+    <button class="btn-recipe-book" id="ui-open-recipes-btn">📖 Recipes</button>
+  </div>
+
+  <!-- Stage Area -->
+  <div class="stage">
+    <!-- Finished Dishes Shelf -->
+    <div class="dish-shelf-container">
+      <div class="shelf-label">Shelf</div>
+      <div class="shelf-dishes" id="ui-dish-shelf"></div>
+    </div>
+
+    <!-- Kitchen Props -->
+    <div class="kitchen-props">
+      <!-- Refrigerator Deck -->
+      <div class="fridge-deck" id="ui-fridge">
+        <div class="fridge-handle"></div>
+        <div class="fridge-icon" id="ui-fridge-icon">🧊</div>
+        <div class="fridge-count" id="ui-deck-count">0</div>
+      </div>
+
+      <!-- Trash Bin -->
+      <div class="trash-bin" id="ui-trash">🗑️</div>
+    </div>
+
+    <!-- Cutting Board Area -->
+    <div class="cutting-board" id="ui-cooking-pot"></div>
+
+    <!-- Dynamic Scoring Banner -->
+    <div class="score-banner" id="ui-score-banner">
+      <span id="ui-banner-dish" style="color: var(--panel-wood);">Select Cards</span>
+      <span id="ui-banner-calc" style="color: var(--accent-orange);"></span>
+    </div>
+  </div>
+
+  <!-- Hand & Controls -->
+  <div class="hand-container">
+    <div class="reorder-bar">
+      <button class="btn-sort" id="ui-sort-type-btn">Sort by Type</button>
+      <button class="btn-sort" id="ui-sort-score-btn">Sort by Score</button>
+    </div>
+
+    <div class="hand-arc-wrapper">
+      <div class="hand" id="ui-hand"></div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-cook" id="ui-cook-btn" disabled>Cook</button>
+      <button class="btn btn-discard" id="ui-discard-btn" disabled>Discard</button>
+    </div>
+  </div>
+
+  <!-- Recipe Book Modal -->
+  <div class="modal hidden" id="ui-recipes-modal">
+    <div class="modal-header">📖 Recipe Book</div>
+    <div class="recipe-list" id="ui-recipe-list"></div>
+    <button class="btn btn-cook" id="ui-close-recipes-btn">Close</button>
+  </div>
+
+  <!-- Level Complete Popup Modal -->
+  <div class="modal hidden" id="ui-level-complete-modal">
+    <div class="modal-header">🎉 Level Complete!</div>
+    <p style="text-align:center; font-size:1rem;" id="ui-complete-summary">You reached all level requirements!</p>
+    <div style="display:flex; flex-direction:column; gap:12px; margin-top:20px;">
+      <button class="btn btn-secondary" id="ui-btn-review-dishes">📜 Review Dishes</button>
+      <button class="btn btn-cook" id="ui-btn-go-shop">🛒 Go to Supermarket</button>
+    </div>
+  </div>
+
+  <!-- Review Dishes Modal -->
+  <div class="modal hidden" id="ui-review-modal">
+    <div class="modal-header">🍽️ Dishes Prepared</div>
+    <div class="review-list" id="ui-review-list"></div>
+    <button class="btn btn-secondary" id="ui-copy-clipboard-btn">📋 Copy to Clipboard</button>
+    <button class="btn btn-cook" id="ui-close-review-btn">Proceed to Supermarket</button>
+  </div>
+
+  <!-- Supermarket Modal -->
+  <div class="modal hidden" id="ui-shop">
+    <div class="modal-header">🛒 Supermarket</div>
+    <p style="text-align:center; font-size:0.95rem;" id="ui-shop-summary">Spend Forks on kitchenware, skills, diets & ingredients!</p>
+    <div class="shop-grid" id="ui-shop-items"></div>
+    <button class="btn btn-cook" id="ui-next-week-btn">Next Level</button>
+  </div>
+
+  <!-- Card Description Popup Modal (Hold to View) -->
+  <div id="card-popup-modal" class="popup-overlay hidden">
+    <div class="popup-content">
+      <h3 id="popup-card-title">Card Title</h3>
+      <p id="popup-card-desc">Card description goes here...</p>
+      <button id="popup-close-btn" class="close-btn">Close</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
