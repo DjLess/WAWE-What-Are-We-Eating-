@@ -146,15 +146,16 @@
       <div class="slots-row" id="ui-skill-slots"></div>
     </div>
 
-    <div class="fridge-deck" id="ui-fridge">
-      <div class="fridge-handle"></div>
-      <div class="fridge-icon" id="ui-fridge-icon">🧊</div>
+    <div class="fridge-deck" id="ui-fridge" title="Tap: draw card · Hold: view contents">
+      <div class="fridge-door" id="ui-fridge-door">
+        <div class="fridge-handle"></div>
+      </div>
       <div class="fridge-count" id="ui-deck-count">0</div>
     </div>
 
     <button class="btn-recipe-book" id="ui-open-recipes-btn">📖</button>
 
-    <div class="trash-bin" id="ui-trash" title="Discard selected cards">🗑️</div>
+    <div class="trash-bin" id="ui-trash" title="Tap: discard · Hold: view discarded">🗑️</div>
   </div>
 
   <!-- Recipe Book Modal -->
@@ -210,12 +211,30 @@
     <button class="btn btn-cook" id="ui-close-runinfo-btn">Close</button>
   </div>
 
-  <!-- Card Details Tooltip (Hold 2s to View) -->
-  <div id="card-popup-modal" class="card-tooltip hidden">
-    <div class="card-tooltip-arrow"></div>
-    <h3 id="popup-card-title">Card Title</h3>
-    <p id="popup-card-desc">Card description goes here...</p>
-    <div id="popup-card-effects" class="card-tooltip-effects"></div>
+  <!-- Fridge Modal (cartas restantes) -->
+  <div class="modal fridge-modal hidden" id="ui-fridge-modal">
+    <div class="modal-header">🧊 Fridge Contents</div>
+    <div class="fridge-modal-count" id="ui-fridge-modal-count">0 cards left</div>
+    <div class="grouped-card-list" id="ui-fridge-modal-list"></div>
+    <button class="btn btn-cook" id="ui-close-fridge-modal-btn">Close</button>
+  </div>
+
+  <!-- Trash Modal (cartas descartadas) -->
+  <div class="modal trash-modal hidden" id="ui-trash-modal">
+    <div class="modal-header">🗑️ Discarded Cards</div>
+    <div class="trash-modal-count" id="ui-trash-modal-count">0 cards discarded</div>
+    <div class="grouped-card-list" id="ui-trash-modal-list"></div>
+    <button class="btn btn-cook" id="ui-close-trash-modal-btn">Close</button>
+  </div>
+
+  <!-- Card Description Popup Modal (Hold 0.6s to View) -->
+  <div id="card-popup-modal" class="popup-overlay hidden">
+    <div class="popup-content">
+      <h3 id="popup-card-title">Card Title</h3>
+      <p id="popup-card-desc">Card description goes here...</p>
+      <div id="popup-card-effects" class="popup-card-effects"></div>
+      <button id="popup-close-btn" class="close-btn">Close</button>
+    </div>
   </div>
 </div>
 

@@ -50,5 +50,6 @@ export let state = {
   isAnimating: false,
   sortScoreAscending: false,
   selectedDeckType: 'regular',
-  reduceMotion: false
+  reduceMotion: false,
+  discardedCards: []
 };

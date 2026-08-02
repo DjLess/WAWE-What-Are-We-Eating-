@@ -52,9 +52,49 @@ export function initGameScreen() {
   document.getElementById('ui-sort-type-btn').onclick = sortHandByType;
   document.getElementById('ui-sort-score-btn').onclick = sortHandByScore;
 
-  document.getElementById('ui-fridge').onclick = () => {
+  // El fridge y el trash combinan dos gestos:
+  //  - Tap normal: la accion de siempre (fridge = robar carta, trash = descartar)
+  //  - Mantener presionado 0.6s (HOLD_DURATION): abre un popup con su contenido completo
+  // Como un "hold" tambien dispara un click nativo al soltar, usamos una bandera
+  // para que ese click no ejecute la accion normal justo despues de abrir el popup.
+  let fridgeHoldTriggered = false;
+  const fridgeEl = document.getElementById('ui-fridge');
+
+  fridgeEl.onclick = () => {
+    if (fridgeHoldTriggered) { fridgeHoldTriggered = false; return; }
     if (!state.isAnimating && state.hand.length < MAX_HAND_SIZE) drawHand();
   };
+
+  bindHold(fridgeEl, () => {
+    fridgeHoldTriggered = true;
+    openFridgeModal();
+  });
+
+  let trashHoldTriggered = false;
+  const trashEl = document.getElementById('ui-trash');
+
+  trashEl.onclick = () => {
+    if (trashHoldTriggered) { trashHoldTriggered = false; return; }
+    discardSelected();
+  };
+
+  bindHold(trashEl, () => {
+    trashHoldTriggered = true;
+    openTrashModal();
+  });
+
+  document.getElementById('ui-close-fridge-modal-btn').onclick = () => {
+    document.getElementById('ui-fridge-modal').classList.add('hidden');
+  };
+
+  document.getElementById('ui-close-trash-modal-btn').onclick = () => {
+    document.getElementById('ui-trash-modal').classList.add('hidden');
+  };
+
+  document.getElementById("popup-close-btn").addEventListener("click", hideCardPopup);
+  document.getElementById("card-popup-modal").addEventListener("click", (e) => {
+    if (e.target.id === "card-popup-modal") hideCardPopup();
+  });
 
   document.getElementById('ui-open-recipes-btn').onclick = () => {
     renderRecipes();
@@ -82,9 +122,6 @@ export function initGameScreen() {
     document.getElementById('ui-level-complete-modal').classList.add('hidden');
     bus.emit('shop:open');
   };
-
-  // El basurero es un atajo visual para "Discard" (misma accion que el boton).
-  document.getElementById('ui-trash').onclick = () => discardSelected();
 
   // --- Options ---
   const reduceMotionCheckbox = document.getElementById('ui-opt-reduce-motion');
@@ -195,6 +232,7 @@ export function initGameScreen() {
     state.finishedDishes = [];
     state.hand = [];
     state.selectedIndices = [];
+    state.discardedCards = [];
 
     document.getElementById('ui-dish-shelf').innerHTML = '';
     state.fridgeDeck = applyDeckType(state.selectedDeckType);
@@ -347,18 +385,15 @@ export function initGameScreen() {
   async function performInitialDeal() {
     state.isAnimating = true;
     const fridgeEl = document.getElementById('ui-fridge');
-    const iconEl = document.getElementById('ui-fridge-icon');
 
     fridgeEl.classList.add('dealing');
-    iconEl.innerText = '⏳';
-    iconEl.classList.add('spinning');
+    await wait(400); // deja que la puerta termine de abrirse antes de repartir
 
     state.hand = initializeStartingHand(state.fridgeDeck, state.selectedDeckType);
     renderHand();
 
+    await wait(250);
     fridgeEl.classList.remove('dealing');
-    iconEl.innerText = '🧊';
-    iconEl.classList.remove('spinning');
     state.isAnimating = false;
     evaluateDishPreview();
     updateHUD();
@@ -371,11 +406,9 @@ export function initGameScreen() {
 
     state.isAnimating = true;
     const fridgeEl = document.getElementById('ui-fridge');
-    const iconEl = document.getElementById('ui-fridge-icon');
 
     fridgeEl.classList.add('dealing');
-    iconEl.innerText = '⏳';
-    iconEl.classList.add('spinning');
+    await wait(400); // deja que la puerta termine de abrirse antes de que salgan las cartas
 
     for (let i = 0; i < cardsNeeded; i++) {
       if (state.fridgeDeck.length > 0) {
@@ -398,8 +431,6 @@ export function initGameScreen() {
     }
 
     fridgeEl.classList.remove('dealing');
-    iconEl.innerText = '🧊';
-    iconEl.classList.remove('spinning');
     state.isAnimating = false;
     evaluateDishPreview();
   }
@@ -431,31 +462,30 @@ export function initGameScreen() {
     return '';
   }
 
-  let holdTimer = null;
-  const HOLD_DURATION = 2000;
+  const HOLD_DURATION = 600;
+
+  // Helper generico de "mantener presionado": llama onHold() tras `duration`,
+  // y onRelease() (opcional) al soltar/cancelar. Usado por las cartas
+  // (popup de efectos) y por fridge/trash (peek de contenido).
+  function bindHold(el, onHold, onRelease, duration = HOLD_DURATION) {
+    let timer = null;
+    const start = () => { timer = setTimeout(onHold, duration); };
+    const cancel = () => {
+      if (timer) { clearTimeout(timer); timer = null; }
+      if (onRelease) onRelease();
+    };
+
+    el.addEventListener("mousedown", start);
+    el.addEventListener("mouseup", cancel);
+    el.addEventListener("mouseleave", cancel);
+
+    el.addEventListener("touchstart", start);
+    el.addEventListener("touchend", cancel);
+    el.addEventListener("touchmove", cancel);
+  }
 
   function setupCardHoldListener(cardElement, cardData) {
-    const startHold = () => {
-      holdTimer = setTimeout(() => {
-        showCardPopup(cardData, cardElement);
-      }, HOLD_DURATION);
-    };
-
-    const cancelHold = () => {
-      if (holdTimer) {
-        clearTimeout(holdTimer);
-        holdTimer = null;
-      }
-      hideCardPopup();
-    };
-
-    cardElement.addEventListener("mousedown", startHold);
-    cardElement.addEventListener("mouseup", cancelHold);
-    cardElement.addEventListener("mouseleave", cancelHold);
-
-    cardElement.addEventListener("touchstart", startHold);
-    cardElement.addEventListener("touchend", cancelHold);
-    cardElement.addEventListener("touchmove", cancelHold);
+    bindHold(cardElement, () => showCardPopup(cardData));
   }
 
   // Efectos actualmente aplicados a ESTA instancia de la carta (dinamico,
@@ -473,7 +503,7 @@ export function initGameScreen() {
     return lines;
   }
 
-  function showCardPopup(card, anchorEl) {
+  function showCardPopup(card) {
     document.getElementById("popup-card-title").innerText = card.name;
     document.getElementById("popup-card-desc").innerText = card.description || `Category: ${card.type.toUpperCase()} | Points: +${card.points || 0}`;
 
@@ -481,21 +511,44 @@ export function initGameScreen() {
     const effectLines = getCardEffectsLines(card);
     effectsEl.innerHTML = effectLines.map(line => `<div class="effect-line">${line}</div>`).join('');
 
-    const tooltip = document.getElementById("card-popup-modal");
-    tooltip.classList.remove("hidden");
-
-    const rect = anchorEl.getBoundingClientRect();
-    tooltip.style.left = `${rect.left + rect.width / 2}px`;
-    tooltip.style.top = `${rect.top}px`;
-    // Se agrega en el siguiente frame para que la transicion de opacidad/transform se anime.
-    requestAnimationFrame(() => tooltip.classList.add("visible"));
+    document.getElementById("card-popup-modal").classList.remove("hidden");
   }
 
   function hideCardPopup() {
-    const tooltip = document.getElementById("card-popup-modal");
-    tooltip.classList.remove("visible");
-    tooltip.classList.add("hidden");
+    document.getElementById("card-popup-modal").classList.add("hidden");
   }
+
+  // Agrupa una lista de cartas por nombre para mostrarlas de forma compacta
+  // (ej. "Tomato x4") en vez de repetir cada copia individual.
+  function groupCardsByName(cards) {
+    const groups = new Map();
+    cards.forEach(card => {
+      const existing = groups.get(card.name);
+      if (existing) {
+        existing.count += 1;
+      } else {
+        groups.set(card.name, { name: card.name, icon: card.icon, type: card.type, count: 1 });
+      }
+    });
+    return [...groups.values()].sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  function renderGroupedCardList(containerEl, cards, emptyMessage) {
+    if (cards.length === 0) {
+      containerEl.innerHTML = `<div class="runinfo-empty-note">${emptyMessage}</div>`;
+      return;
+    }
+
+    const grouped = groupCardsByName(cards);
+    containerEl.innerHTML = grouped.map(g => `
+      <div class="grouped-card-row">
+        <div class="grouped-card-icon">${g.icon}</div>
+        <div class="grouped-card-name">${g.name}</div>
+        <div class="grouped-card-count">x${g.count}</div>
+      </div>
+    `).join('');
+  }
+
 
   function renderHand() {
     const handEl = document.getElementById('ui-hand');
@@ -814,6 +867,9 @@ export function initGameScreen() {
     await wait(320);
 
     state.discardsLeft -= 1;
+    state.selectedIndices.forEach(idx => {
+      state.discardedCards.push(state.hand[idx]);
+    });
     state.hand = state.hand.filter((_, idx) => !state.selectedIndices.includes(idx));
     state.selectedIndices = [];
 
@@ -867,6 +923,28 @@ export function initGameScreen() {
       `;
       listEl.appendChild(item);
     });
+  }
+
+  function openFridgeModal() {
+    const countEl = document.getElementById('ui-fridge-modal-count');
+    countEl.innerText = `${state.fridgeDeck.length} card${state.fridgeDeck.length === 1 ? '' : 's'} left`;
+    renderGroupedCardList(
+      document.getElementById('ui-fridge-modal-list'),
+      state.fridgeDeck,
+      'The fridge is empty!'
+    );
+    document.getElementById('ui-fridge-modal').classList.remove('hidden');
+  }
+
+  function openTrashModal() {
+    const countEl = document.getElementById('ui-trash-modal-count');
+    countEl.innerText = `${state.discardedCards.length} card${state.discardedCards.length === 1 ? '' : 's'} discarded`;
+    renderGroupedCardList(
+      document.getElementById('ui-trash-modal-list'),
+      state.discardedCards,
+      'Nothing discarded yet this level!'
+    );
+    document.getElementById('ui-trash-modal').classList.remove('hidden');
   }
 
   function renderRunInfo() {

@@ -506,10 +506,6 @@
       flex-shrink: 0;
     }
 
-    .bottom-utility-bar .fridge-icon {
-      font-size: 1.3rem;
-    }
-
     .bottom-utility-bar .trash-bin {
       width: 46px;
       height: 52px;
@@ -520,7 +516,7 @@
     .fridge-deck {
       width: 75px;
       height: 95px;
-      background: #a8dadc;
+      background: #1d3557;
       border: 3px solid #457b9d;
       border-radius: 10px;
       display: flex;
@@ -532,20 +528,6 @@
       cursor: pointer;
     }
 
-    .fridge-deck.dealing {
-      animation: fridgePulse 0.4s infinite alternate;
-      background-color: #f4a261;
-      border-color: #e76f51;
-    }
-
-    .fridge-icon {
-      font-size: 1.8rem;
-    }
-
-    .fridge-icon.spinning {
-      animation: iconSpin 0.6s infinite linear;
-    }
-
     .fridge-handle {
       position: absolute;
       right: 6px;
@@ -554,12 +536,6 @@
       height: 30px;
       background: #1d3557;
       border-radius: 2px;
-    }
-
-    .fridge-count {
-      font-weight: 700;
-      font-size: 0.95rem;
-      color: #1d3557;
     }
 
     .trash-bin {
@@ -914,69 +890,151 @@
     .shop-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
     .shop-item { flex-direction: column; justify-content: space-between; text-align: center; }
 
-    /* Card Details Tooltip (Hold 2s to View) - anclado sobre la carta, no bloquea la pantalla */
-    .card-tooltip {
+    /* Card Description Popup Modal (Hold 0.6s to View) */
+    .popup-overlay {
       position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
       z-index: 1000;
-      background: #2a2a2a;
-      border: 1px solid #444;
-      padding: 12px 14px;
-      border-radius: 10px;
-      text-align: center;
-      max-width: 220px;
-      width: max-content;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.5);
-      pointer-events: none;
-      opacity: 0;
-      transform: translate(-50%, -8px);
-      transition: opacity 0.15s ease, transform 0.15s ease;
     }
 
-    .card-tooltip.visible {
-      opacity: 1;
-      transform: translate(-50%, -14px);
-    }
-
-    .card-tooltip.hidden {
+    .popup-overlay.hidden {
       display: none !important;
     }
 
-    .card-tooltip-arrow {
-      position: absolute;
-      bottom: -6px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 0;
-      height: 0;
-      border-left: 6px solid transparent;
-      border-right: 6px solid transparent;
-      border-top: 6px solid #2a2a2a;
+    .popup-content {
+      background: #2a2a2a;
+      border: 1px solid #444;
+      padding: 25px 30px;
+      border-radius: 12px;
+      text-align: center;
+      max-width: 300px;
+      width: 80%;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.5);
     }
 
-    .card-tooltip h3 {
+    .popup-content h3 {
       color: #f9d423;
-      font-size: 0.9rem;
-      margin-bottom: 4px;
+      margin-bottom: 10px;
     }
 
-    .card-tooltip p {
+    .popup-content p {
       color: #ccc;
-      font-size: 0.75rem;
-      line-height: 1.3;
+      font-size: 14px;
+      margin-bottom: 8px;
     }
 
-    .card-tooltip-effects {
-      margin-top: 6px;
+    .popup-card-effects {
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 3px;
+      margin-bottom: 18px;
     }
 
-    .card-tooltip-effects .effect-line {
-      font-size: 0.72rem;
+    .popup-card-effects .effect-line {
+      font-size: 0.78rem;
       color: #f2cc8f;
       font-weight: 600;
     }
+
+    .close-btn {
+      padding: 6px 16px;
+      background: #ff4e50;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .close-btn:hover {
+      background: #e03b3d;
+    }
+
+    /* Fridge door: se abre y las cartas salen desde ahi mientras reparte */
+    .fridge-deck {
+      perspective: 300px;
+      overflow: hidden;
+    }
+
+    .fridge-door {
+      position: absolute;
+      inset: 0;
+      background: #a8dadc;
+      border-radius: inherit;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transform-origin: left center;
+      transition: transform 0.4s ease;
+      backface-visibility: hidden;
+      z-index: 2;
+    }
+
+    .fridge-deck.dealing .fridge-door {
+      transform: rotateY(-115deg);
+    }
+
+    .fridge-count {
+      position: absolute;
+      bottom: 4px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 5;
+      background: rgba(255,255,255,0.9);
+      padding: 1px 7px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.8rem;
+      color: #1d3557;
+    }
+
+    /* Fridge / Trash content modals */
+    .fridge-modal { background: linear-gradient(#dff6f8, #a8dadc); }
+    .fridge-modal .modal-header { color: #1d3557; }
+    .trash-modal { background: linear-gradient(#3a3a3a, #1f1f1f); }
+    .trash-modal .modal-header { color: #e63946; }
+
+    .fridge-modal-count, .trash-modal-count {
+      text-align: center;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--panel-wood);
+    }
+
+    .trash-modal .trash-modal-count { color: #eee; }
+
+    .grouped-card-list {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      overflow-y: auto;
+    }
+
+    .grouped-card-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(255,255,255,0.7);
+      border-radius: 8px;
+      padding: 8px 12px;
+    }
+
+    .trash-modal .grouped-card-row {
+      background: rgba(255,255,255,0.1);
+      color: #eee;
+    }
+
+    .grouped-card-icon { font-size: 1.4rem; }
+    .grouped-card-name { flex: 1; font-weight: 600; font-size: 0.88rem; }
+    .grouped-card-count { font-weight: 700; opacity: 0.75; }
 
     /* Floating Text Pops */
     .floating-text {
@@ -1033,14 +1091,4 @@
       0% { opacity: 1; transform: translateY(0) scale(0.8); }
       50% { opacity: 1; transform: translateY(-30px) scale(1.2); }
       100% { opacity: 0; transform: translateY(-60px) scale(1); }
-    }
-
-    @keyframes fridgePulse {
-      0% { transform: scale(1); }
-      100% { transform: scale(1.08); }
-    }
-
-    @keyframes iconSpin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
     }
