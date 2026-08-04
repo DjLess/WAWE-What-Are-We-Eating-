@@ -32,6 +32,24 @@ export const VEGETARIAN_PROTEINS = [
   { id: 'veggie_burger', name: 'Veggie Patty', type: 'protein', points: 11, icon: '🍔', tags: ['plant_protein'], state: 'normal' }
 ];
 
+// Vegan Dairy Substitutes for the Vegetarian Deck (replaces Cheese/Butter,
+// which are animal products and don't belong in a strictly vegan deck)
+export const VEGAN_DAIRY = [
+  { id: 'vegan_cheese', name: 'Vegan Cheese', type: 'dairy', points: 6, multiplierBonus: 1, icon: '🧀', tags: ['vegan'], state: 'normal' },
+  { id: 'vegan_butter', name: 'Plant Butter', type: 'dairy', points: 4, multiplierBonus: 1, icon: '🧈', tags: ['vegan'], state: 'normal' }
+];
+
+// Advanced sauces & specialty ingredients. Not part of the Regular or
+// Vegetarian starting decks -- only obtainable from the Supermarket, unless
+// the player is running the Special deck (where they're included from the start).
+export const SUPERMARKET_INGREDIENTS = [
+  { id: 'soy_sauce', name: 'Soy Sauce', type: 'sauce', points: 6, multiplierBonus: 1, icon: '🍶', costForks: 4, state: 'normal' },
+  { id: 'truffle_oil', name: 'Truffle Oil', type: 'sauce', points: 10, multiplierBonus: 2, icon: '🍾', costForks: 6, state: 'normal' },
+  { id: 'curry_paste', name: 'Curry Paste', type: 'sauce', points: 8, multiplierBonus: 1, icon: '🍛', costForks: 5, state: 'normal' },
+  { id: 'wasabi', name: 'Wasabi', type: 'sauce', points: 5, multiplierBonus: 2, icon: '🟩', costForks: 5, state: 'normal' },
+  { id: 'miso_paste', name: 'Miso Paste', type: 'sauce', points: 7, multiplierBonus: 1, icon: '🥣', costForks: 4, state: 'normal' }
+];
+
 // Metaphorical / Emotional Special Ingredients (Only 1 copy per deck)
 export const METAPHORICAL_INGREDIENTS = [
   { id: 'love', name: 'Love', type: 'special', points: 15, multiplierBonus: 2, icon: '💖', state: 'normal' },

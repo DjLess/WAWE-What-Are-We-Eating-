@@ -4,7 +4,7 @@
 
 export const MAX_HAND_SIZE = 9;
 
-export const TYPE_ORDER = { carbs: 1, vegetable: 2, protein: 3, spice: 4, dairy: 4, special: 4 };
+export const TYPE_ORDER = { carbs: 1, vegetable: 2, protein: 3, spice: 4, dairy: 4, sauce: 4, special: 4 };
 
 export const KITCHENWARE_DB = [
   { id: 'skillet', name: 'Cast Iron Skillet', icon: '🍳', costForks: 4, desc: '+3 Mult if dish has Protein' },

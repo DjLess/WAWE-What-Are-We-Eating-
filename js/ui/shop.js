@@ -5,7 +5,7 @@
 // y es game.js quien decide que hacer (incrementar semana, reiniciar).
 
 import { state, KITCHENWARE_DB, CHEF_SKILLS_DB } from '../state.js';
-import { BASE_INGREDIENTS } from '../data/ingredients.js';
+import { BASE_INGREDIENTS, SUPERMARKET_INGREDIENTS } from '../data/ingredients.js';
 import { BASE_DIETS } from '../data/diets.js';
 import { bus } from '../eventBus.js';
 
@@ -42,7 +42,11 @@ function pickRandomUnique(pool, count) {
 }
 
 function generateShopCard() {
-  const randomBase = BASE_INGREDIENTS[Math.floor(Math.random() * BASE_INGREDIENTS.length)];
+  // El shelf mezcla ingredientes base con las salsas/especialidades avanzadas
+  // (Soy Sauce, Truffle Oil, etc.) -- esa es la via normal para conseguirlas
+  // fuera del mazo especial, que ya las trae incluidas desde el inicio.
+  const pool = [...BASE_INGREDIENTS, ...SUPERMARKET_INGREDIENTS];
+  const randomBase = pool[Math.floor(Math.random() * pool.length)];
   const card = { ...randomBase };
 
   const randState = Math.random();

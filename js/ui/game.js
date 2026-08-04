@@ -16,7 +16,7 @@
 //                                                     slots/HUD cuando shop.js compra algo
 
 import { state, MAX_HAND_SIZE, TYPE_ORDER } from '../state.js';
-import { BASE_INGREDIENTS, VEGETARIAN_PROTEINS } from '../data/ingredients.js';
+import { BASE_INGREDIENTS, VEGETARIAN_PROTEINS, VEGAN_DAIRY, SUPERMARKET_INGREDIENTS } from '../data/ingredients.js';
 import { DishEvaluator, RECIPE_BOOK } from '../data/dishes.js';
 import { LevelManager } from '../data/levels.js';
 import { bus } from '../eventBus.js';
@@ -165,6 +165,8 @@ export function initGameScreen() {
     let sourceIngredients = [...BASE_INGREDIENTS];
 
     if (deckType === 'vegetarian') {
+      // Estrictamente vegano: se sustituyen tanto las proteinas animales
+      // como los lacteos (queso/mantequilla no son veganos aunque no sean carne).
       sourceIngredients = sourceIngredients.map(card => {
         if (card.type === 'protein') {
           if (card.id === 'beef') return { ...VEGETARIAN_PROTEINS.find(p => p.id === 'seitan') };
@@ -172,8 +174,16 @@ export function initGameScreen() {
           if (card.id === 'egg') return { ...VEGETARIAN_PROTEINS.find(p => p.id === 'tempeh') };
           if (card.id === 'fish') return { ...VEGETARIAN_PROTEINS.find(p => p.id === 'veggie_burger') };
         }
+        if (card.type === 'dairy') {
+          if (card.id === 'cheese') return { ...VEGAN_DAIRY.find(p => p.id === 'vegan_cheese') };
+          if (card.id === 'butter') return { ...VEGAN_DAIRY.find(p => p.id === 'vegan_butter') };
+        }
         return { ...card };
       });
+    } else if (deckType === 'special') {
+      // El mazo especial incluye desde el inicio las salsas/ingredientes
+      // avanzados que en los otros mazos solo se consiguen en el Supermarket.
+      sourceIngredients = [...sourceIngredients, ...SUPERMARKET_INGREDIENTS];
     }
 
     let deck = [...sourceIngredients, ...sourceIngredients, ...sourceIngredients].map(card => {
@@ -735,15 +745,23 @@ export function initGameScreen() {
     let hasSpecialIngredient = false;
 
     const validCards = selectedCards.filter(c => c.state !== 'frozen' && c.state !== 'rotten');
-    state.kitchenware.forEach(kw => {
-      if (kw.id === 'skillet' && validCards.some(c => c.type === 'protein')) accumulatedMult += 3;
-      if (kw.id === 'blender') accumulatedPoints += validCards.filter(c => c.type === 'vegetable').length * 15;
-      if (kw.id === 'knife' && validCards.filter(c => c.type === 'protein').length === 1) accumulatedMult += 2;
-      if (kw.id === 'airfryer' && !validCards.some(c => c.type === 'dairy')) accumulatedPoints += 50;
-      if (kw.id === 'spicerack') accumulatedMult += validCards.filter(c => c.type === 'spice').length * 0.5;
-      if (kw.id === 'deepfryer') accumulatedMult *= 1.5;
-      if (kw.id === 'wok' && validCards.some(c => c.type === 'carbs')) state.forks += 2;
-    });
+
+    // Si el plato es invalido (multiplier 0, ej. por un ingrediente podrido/
+    // congelado o categorias mezcladas) ningun bono de kitchenware debe
+    // aplicar -- de lo contrario un plato "invalido" podria igual sumar
+    // puntos o Forks (wok) solo por los ingredientes buenos que acompañaban
+    // al ingrediente dañado.
+    if (dish.multiplier > 0) {
+      state.kitchenware.forEach(kw => {
+        if (kw.id === 'skillet' && validCards.some(c => c.type === 'protein')) accumulatedMult += 3;
+        if (kw.id === 'blender') accumulatedPoints += validCards.filter(c => c.type === 'vegetable').length * 15;
+        if (kw.id === 'knife' && validCards.filter(c => c.type === 'protein').length === 1) accumulatedMult += 2;
+        if (kw.id === 'airfryer' && !validCards.some(c => c.type === 'dairy')) accumulatedPoints += 50;
+        if (kw.id === 'spicerack') accumulatedMult += validCards.filter(c => c.type === 'spice').length * 0.5;
+        if (kw.id === 'deepfryer') accumulatedMult *= 1.5;
+        if (kw.id === 'wok' && validCards.some(c => c.type === 'carbs')) state.forks += 2;
+      });
+    }
 
     for (let i = 0; i < state.selectedIndices.length; i++) {
       const idx = state.selectedIndices[i];
