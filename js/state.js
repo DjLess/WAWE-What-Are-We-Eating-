@@ -6,17 +6,59 @@ export const MAX_HAND_SIZE = 9;
 
 export const TYPE_ORDER = { carbs: 1, vegetable: 2, protein: 3, spice: 4, dairy: 4, sauce: 4, special: 4 };
 
+// Cada kitchenware expone scoreEffect(cards) -> {chips, mult, multX, forks, label} | null.
+// Se evaluan como su propia fase de puntuacion (despues de las cartas), en el
+// orden en que aparecen en los slots -- igual que los jokers de Balatro.
 export const KITCHENWARE_DB = [
-  { id: 'skillet', name: 'Cast Iron Skillet', icon: '🍳', costForks: 4, desc: '+3 Mult if dish has Protein' },
-  { id: 'blender', name: 'High-Speed Blender', icon: '🌪️', costForks: 4, desc: '+15 Pts for every Vegetable' },
-  { id: 'knife', name: "Chef's Knife", icon: '🔪', costForks: 3, desc: '+2 Mult if dish has exactly 1 Protein' },
-  { id: 'airfryer', name: 'Air Fryer', icon: '🍟', costForks: 5, desc: '+50 Pts if no Dairy in dish' },
-  { id: 'garlic_press', name: 'Garlic Press', icon: '🧄', costForks: 3, desc: '+1 Mult on Spice/Herb dishes' },
-  { id: 'spicerack', name: 'Spice Rack', icon: '🌶️', costForks: 4, desc: 'Spice cards give +0.5 Mult' },
-  { id: 'containers', name: 'Prep Containers', icon: '🍱', costForks: 6, desc: '+1 Hand Size bonus' },
-  { id: 'deepfryer', name: 'Deep Fryer', icon: '🍤', costForks: 5, desc: 'x1.5 Mult bonus on all dishes' },
-  { id: 'sousvide', name: 'Sous Vide', icon: '🌡️', costForks: 4, desc: '+20 Pts bonus on Protein cards' },
-  { id: 'wok', name: 'Golden Wok', icon: '🥘', costForks: 5, desc: '+$2 Forks on valid Rice/Carb dishes' }
+  {
+    id: 'skillet', name: 'Cast Iron Skillet', icon: '🍳', costForks: 4, desc: '+3 Mult if dish has Protein',
+    scoreEffect: (cards) => cards.some(c => c.type === 'protein') ? { mult: 3, label: '+3 Mult' } : null
+  },
+  {
+    id: 'blender', name: 'High-Speed Blender', icon: '🌪️', costForks: 4, desc: '+15 Pts for every Vegetable',
+    scoreEffect: (cards) => {
+      const n = cards.filter(c => c.type === 'vegetable').length;
+      return n > 0 ? { chips: n * 15, label: `+${n * 15} Chips` } : null;
+    }
+  },
+  {
+    id: 'knife', name: "Chef's Knife", icon: '🔪', costForks: 3, desc: '+2 Mult if dish has exactly 1 Protein',
+    scoreEffect: (cards) => cards.filter(c => c.type === 'protein').length === 1 ? { mult: 2, label: '+2 Mult' } : null
+  },
+  {
+    id: 'airfryer', name: 'Air Fryer', icon: '🍟', costForks: 5, desc: '+50 Pts if no Dairy in dish',
+    scoreEffect: (cards) => !cards.some(c => c.type === 'dairy') ? { chips: 50, label: '+50 Chips' } : null
+  },
+  {
+    id: 'garlic_press', name: 'Garlic Press', icon: '🧄', costForks: 3, desc: '+1 Mult on Spice/Herb dishes',
+    scoreEffect: (cards) => cards.some(c => c.type === 'spice') ? { mult: 1, label: '+1 Mult' } : null
+  },
+  {
+    id: 'spicerack', name: 'Spice Rack', icon: '🌶️', costForks: 4, desc: 'Spice cards give +0.5 Mult',
+    scoreEffect: (cards) => {
+      const n = cards.filter(c => c.type === 'spice').length;
+      return n > 0 ? { mult: n * 0.5, label: `+${(n * 0.5).toFixed(1)} Mult` } : null;
+    }
+  },
+  {
+    id: 'containers', name: 'Prep Containers', icon: '🍱', costForks: 6, desc: '+1 Hand Size bonus',
+    scoreEffect: () => null // Efecto pasivo (tamaño de mano), no puntua.
+  },
+  {
+    id: 'deepfryer', name: 'Deep Fryer', icon: '🍤', costForks: 5, desc: 'x1.5 Mult bonus on all dishes',
+    scoreEffect: () => ({ multX: 1.5, label: 'x1.5 Mult' })
+  },
+  {
+    id: 'sousvide', name: 'Sous Vide', icon: '🌡️', costForks: 4, desc: '+20 Pts bonus per Protein card',
+    scoreEffect: (cards) => {
+      const n = cards.filter(c => c.type === 'protein').length;
+      return n > 0 ? { chips: n * 20, label: `+${n * 20} Chips` } : null;
+    }
+  },
+  {
+    id: 'wok', name: 'Golden Wok', icon: '🥘', costForks: 5, desc: '+$2 Forks on valid Rice/Carb dishes',
+    scoreEffect: (cards) => cards.some(c => c.type === 'carbs') ? { forks: 2, label: '+🍴2' } : null
+  }
 ];
 
 export const CHEF_SKILLS_DB = [

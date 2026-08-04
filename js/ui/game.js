@@ -726,6 +726,47 @@ export function initGameScreen() {
     setTimeout(() => floatEl.remove(), 800);
   }
 
+  // --- Balatro-style scoring juice (particulas, flash, pop del live-score) ---
+  // Todas respetan "Reduce Motion" de Options: el juego sigue siendo legible
+  // sin ellas, solo se quita el extra decorativo.
+
+  function spawnParticleBurst(anchorEl) {
+    if (state.reduceMotion || !anchorEl) return;
+    const rect = anchorEl.getBoundingClientRect();
+    const symbols = ['✨', '💫', '⭐'];
+    const count = 5;
+    for (let i = 0; i < count; i++) {
+      const p = document.createElement('div');
+      p.className = 'score-particle';
+      p.innerText = symbols[Math.floor(Math.random() * symbols.length)];
+      const angle = (Math.PI * 2 * i) / count + Math.random() * 0.4;
+      const dist = 26 + Math.random() * 18;
+      p.style.left = `${rect.left + rect.width / 2}px`;
+      p.style.top = `${rect.top + rect.height / 2}px`;
+      p.style.setProperty('--dx', `${Math.cos(angle) * dist}px`);
+      p.style.setProperty('--dy', `${Math.sin(angle) * dist}px`);
+      document.body.appendChild(p);
+      setTimeout(() => p.remove(), 500);
+    }
+  }
+
+  function updateLiveScore(chips, mult) {
+    document.getElementById('ui-live-chips').innerText = Math.round(chips);
+    document.getElementById('ui-live-mult').innerText = mult.toFixed(1);
+    const liveScoreEl = document.getElementById('ui-live-score');
+    liveScoreEl.classList.remove('value-pop');
+    void liveScoreEl.offsetWidth; // fuerza reflow para poder re-disparar la animacion
+    liveScoreEl.classList.add('value-pop');
+  }
+
+  function flashScreen() {
+    if (state.reduceMotion) return;
+    const flashEl = document.getElementById('ui-score-flash');
+    flashEl.classList.remove('flash-active');
+    void flashEl.offsetWidth;
+    flashEl.classList.add('flash-active');
+  }
+
   async function cookSelected() {
     if (state.handsLeft <= 0 || state.isAnimating) return;
     state.isAnimating = true;
@@ -739,30 +780,26 @@ export function initGameScreen() {
 
     const bannerDish = document.getElementById('ui-banner-dish');
     const bannerCalc = document.getElementById('ui-banner-calc');
+    const liveScoreEl = document.getElementById('ui-live-score');
 
-    let accumulatedPoints = dish.basePoints;
-    let accumulatedMult = dish.multiplier;
+    // Puntuacion al estilo Balatro: Chips + Mult, evaluados por fases en
+    // orden -- 1) cada carta, 2) cada Kitchenware (izquierda a derecha),
+    // 3) cada Dieta (izquierda a derecha) -- con un display "Chips x Mult"
+    // en vivo que va reaccionando a cada fase, como el marcador de Balatro.
+    let chips = dish.basePoints;
+    let mult = dish.multiplier;
     let hasSpecialIngredient = false;
 
     const validCards = selectedCards.filter(c => c.state !== 'frozen' && c.state !== 'rotten');
 
-    // Si el plato es invalido (multiplier 0, ej. por un ingrediente podrido/
-    // congelado o categorias mezcladas) ningun bono de kitchenware debe
-    // aplicar -- de lo contrario un plato "invalido" podria igual sumar
-    // puntos o Forks (wok) solo por los ingredientes buenos que acompañaban
-    // al ingrediente dañado.
-    if (dish.multiplier > 0) {
-      state.kitchenware.forEach(kw => {
-        if (kw.id === 'skillet' && validCards.some(c => c.type === 'protein')) accumulatedMult += 3;
-        if (kw.id === 'blender') accumulatedPoints += validCards.filter(c => c.type === 'vegetable').length * 15;
-        if (kw.id === 'knife' && validCards.filter(c => c.type === 'protein').length === 1) accumulatedMult += 2;
-        if (kw.id === 'airfryer' && !validCards.some(c => c.type === 'dairy')) accumulatedPoints += 50;
-        if (kw.id === 'spicerack') accumulatedMult += validCards.filter(c => c.type === 'spice').length * 0.5;
-        if (kw.id === 'deepfryer') accumulatedMult *= 1.5;
-        if (kw.id === 'wok' && validCards.some(c => c.type === 'carbs')) state.forks += 2;
-      });
-    }
+    liveScoreEl.classList.remove('hidden');
+    updateLiveScore(chips, mult);
 
+    bannerDish.innerText = `${dish.name.toUpperCase()}!`;
+    bannerCalc.innerText = 'Scoring...';
+    await wait(300);
+
+    // --- FASE 1: cada carta seleccionada, una por una ---
     for (let i = 0; i < state.selectedIndices.length; i++) {
       const idx = state.selectedIndices[i];
       const card = state.hand[idx];
@@ -774,6 +811,7 @@ export function initGameScreen() {
       }
 
       potCardEl.classList.add('scoring-active');
+      spawnParticleBurst(potCardEl);
       await wait(220);
 
       const isCardValid = dish.validCardIndices.includes(i) && card.state !== 'frozen' && card.state !== 'rotten';
@@ -786,42 +824,96 @@ export function initGameScreen() {
           triggerFloatingText(`+25 FRESH BONUS!`, potCardEl);
         }
 
-        if (state.kitchenware.some(k => k.id === 'sousvide') && card.type === 'protein') {
-          cardPts += 20;
-        }
-
         if (card.state === 'gourmet') {
-          accumulatedMult += 0.5;
+          mult += 0.5;
           triggerFloatingText(`+0.5x GOURMET!`, potCardEl);
         }
 
         if (card.multiplierBonus) {
-          accumulatedMult += card.multiplierBonus;
+          mult += card.multiplierBonus;
           triggerFloatingText(`+${card.multiplierBonus}x MULT!`, potCardEl);
         } else {
-          accumulatedPoints += cardPts;
+          chips += cardPts;
           triggerFloatingText(`+${cardPts}`, potCardEl);
         }
-        bannerCalc.className = 'score-pop';
-        bannerCalc.innerText = `${accumulatedPoints} pts x ${accumulatedMult.toFixed(1)}`;
+
+        potCardEl.classList.add('card-score-punch');
+        updateLiveScore(chips, mult);
       } else {
         const failReason = card.state === 'frozen' ? 'FROZEN!' : (card.state === 'rotten' ? 'ROTTEN!' : 'TRASH!');
         triggerFloatingText(`+0 ${failReason}`, potCardEl);
         potCardEl.classList.remove('scoring-active');
         potCardEl.classList.add('trashed-card');
-        bannerCalc.className = 'score-pop';
-        bannerCalc.innerText = `${accumulatedPoints} pts (+0 ${failReason})`;
         potCardEl.classList.add('fly-trash');
       }
 
       await wait(300);
-      bannerCalc.className = '';
+      potCardEl.classList.remove('card-score-punch');
       if (isCardValid) potCardEl.classList.remove('scoring-active');
     }
 
+    // --- FASE 2: Kitchenware, un slot a la vez (izquierda a derecha) ---
+    // Un plato invalido (dish.multiplier === 0) no dispara ningun bono.
+    if (dish.multiplier > 0 && state.kitchenware.length > 0) {
+      await wait(150);
+      bannerDish.innerText = "Kitchenware Bonus! 🔧";
+      const kwSlots = document.querySelectorAll('#ui-kitchenware-slots .slot-item');
+
+      for (let i = 0; i < state.kitchenware.length; i++) {
+        const kw = state.kitchenware[i];
+        const effect = kw.scoreEffect ? kw.scoreEffect(validCards) : null;
+        if (!effect) continue;
+
+        const slotEl = kwSlots[i];
+        if (slotEl) {
+          slotEl.classList.add('slot-triggering');
+          spawnParticleBurst(slotEl);
+          triggerFloatingText(effect.label, slotEl);
+        }
+
+        if (effect.chips) chips += effect.chips;
+        if (effect.mult) mult += effect.mult;
+        if (effect.multX) mult *= effect.multX;
+        if (effect.forks) state.forks += effect.forks;
+
+        updateLiveScore(chips, mult);
+        await wait(420);
+        if (slotEl) slotEl.classList.remove('slot-triggering');
+      }
+    }
+
+    // --- FASE 3: Dietas, un slot a la vez (izquierda a derecha) ---
+    if (dish.multiplier > 0 && state.activeDiets.length > 0) {
+      await wait(150);
+      bannerDish.innerText = "Diet Bonus! 🥗";
+      const dietSlots = document.querySelectorAll('#ui-diet-slots .slot-item');
+
+      for (let i = 0; i < state.activeDiets.length; i++) {
+        const diet = state.activeDiets[i];
+        const effect = diet.scoreEffect ? diet.scoreEffect(validCards) : null;
+        if (!effect) continue;
+
+        const slotEl = dietSlots[i];
+        if (slotEl) {
+          slotEl.classList.add('slot-triggering');
+          spawnParticleBurst(slotEl);
+          triggerFloatingText(effect.label, slotEl);
+        }
+
+        if (effect.chips) chips += effect.chips;
+        if (effect.mult) mult += effect.mult;
+        if (effect.multX) mult *= effect.multX;
+
+        updateLiveScore(chips, mult);
+        await wait(420);
+        if (slotEl) slotEl.classList.remove('slot-triggering');
+      }
+    }
+
+    // --- Cocinar y emplatar ---
     potEl.classList.add('mixing-pot');
     bannerDish.innerText = "Cooking & Mixing... 🍳";
-    await wait(650);
+    await wait(500);
     potEl.classList.remove('mixing-pot');
 
     potEl.innerHTML = '';
@@ -830,21 +922,20 @@ export function initGameScreen() {
     plateEl.innerText = dish.icon;
     potEl.appendChild(plateEl);
 
-    state.activeDiets.forEach(diet => {
-      if (diet.applyEffect) {
-        accumulatedPoints = diet.applyEffect(selectedCards, accumulatedPoints);
-      }
-    });
-
-    const finalScore = Math.max(0, Math.round(accumulatedPoints * accumulatedMult));
+    // --- Remate final: Chips x Mult = Score, con flash de pantalla ---
+    const finalScore = Math.max(0, Math.round(chips * mult));
     bannerDish.innerText = `${dish.name.toUpperCase()}! 🔥`;
-    bannerCalc.innerText = `${accumulatedPoints} x ${accumulatedMult.toFixed(1)} = +${finalScore} PTS!`;
+    bannerCalc.innerText = `${Math.round(chips)} x ${mult.toFixed(1)} = +${finalScore} PTS!`;
     bannerCalc.className = 'score-pop';
+    updateLiveScore(chips, mult);
     triggerFloatingText(`+${finalScore}!`, potEl);
+    if (finalScore > 0) flashScreen();
 
     await wait(850);
+    liveScoreEl.classList.add('hidden');
+    bannerCalc.className = '';
 
-    if (accumulatedMult > 0) {
+    if (dish.multiplier > 0) {
       addDishToShelf(dish.icon, dish.name, hasSpecialIngredient, finalScore);
     }
 
@@ -862,6 +953,7 @@ export function initGameScreen() {
     await drawHand();
     checkLevelEnd();
   }
+
 
   function addDishToShelf(icon, name, isSpecial, points) {
     const shelf = document.getElementById('ui-dish-shelf');

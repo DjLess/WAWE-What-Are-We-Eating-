@@ -9,6 +9,7 @@
 <body>
 
 <div id="app-viewport">
+  <div class="score-flash" id="ui-score-flash"></div>
   <!-- Start Screen & Deck Selection -->
   <div class="screen-overlay" id="ui-start-screen">
     <div class="title-banner">
@@ -113,6 +114,13 @@
 
     <!-- Cutting Board Area -->
     <div class="cutting-board" id="ui-cooking-pot"></div>
+
+    <!-- Live Chips x Mult Display (Balatro-style running score) -->
+    <div class="live-score-display hidden" id="ui-live-score">
+      <div class="live-score-chips" id="ui-live-chips">0</div>
+      <div class="live-score-x">✕</div>
+      <div class="live-score-mult" id="ui-live-mult">0</div>
+    </div>
 
     <!-- Dynamic Scoring Banner -->
     <div class="score-banner" id="ui-score-banner">

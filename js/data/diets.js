@@ -8,47 +8,44 @@ export class Diet {
     this.allowDuplicateCategories = allowDuplicateCategories;
   }
 
-  applyEffect(selectedCards, currentBasePoints) {
-    let scoreMod = 0;
-    // Exclude frozen or rotten cards from diet calculations as they are inedible
+  // Misma forma que kitchenware: {chips, mult, multX, label} | null. Se evalua
+  // como su propia fase de puntuacion, despues de kitchenware.
+  scoreEffect(selectedCards) {
+    // Excluye frozen/rotten -- aunque en la practica un plato con una carta
+    // dañada ya es invalido antes de llegar aqui, esto evita doble conteo.
     const validCards = selectedCards.filter(c => c.state !== 'frozen' && c.state !== 'rotten');
 
     if (this.type === 'veg') {
       const hasMeat = validCards.some(c => c.tags && (c.tags.includes('meat') || c.tags.includes('fish')));
-      if (hasMeat) scoreMod -= 15;
+      return hasMeat ? { chips: -15, label: '-15 Chips' } : null;
     }
 
     if (this.type === 'sweet') {
       const hasExtra = validCards.some(c => c.type === 'extra');
-      if (hasExtra) scoreMod += 30;
+      return hasExtra ? { chips: 30, label: '+30 Chips' } : null;
     }
 
     if (this.type === 'keto') {
       const hasCarb = validCards.some(c => c.type === 'carb' || c.type === 'carbs');
-      if (hasCarb) {
-        scoreMod -= 25;
-      } else {
-        const proteinCount = validCards.filter(c => c.type === 'protein').length;
-        scoreMod += proteinCount * 20;
-      }
+      if (hasCarb) return { chips: -25, label: '-25 Chips' };
+      const proteinCount = validCards.filter(c => c.type === 'protein').length;
+      return proteinCount > 0 ? { chips: proteinCount * 20, label: `+${proteinCount * 20} Chips` } : null;
     }
 
     if (this.type === 'comfort') {
       const hasMeta = validCards.some(c => c.tags && c.tags.includes('meta'));
-      if (hasMeta) scoreMod += 40;
+      return hasMeta ? { chips: 40, label: '+40 Chips' } : null;
     }
 
     if (this.type === 'zero_waste') {
-      if (validCards.length === 5) {
-        scoreMod += 50;
-      }
+      return validCards.length === 5 ? { chips: 50, label: '+50 Chips' } : null;
     }
 
     if (this.type === 'buffet') {
-      scoreMod += 15;
+      return { chips: 15, label: '+15 Chips' };
     }
 
-    return currentBasePoints + scoreMod;
+    return null;
   }
 }
 
