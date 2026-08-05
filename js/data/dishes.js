@@ -17,6 +17,19 @@ export const RECIPE_BOOK = [
     }
   },
   {
+    id: 'cheese_omelette',
+    name: 'Classic Cheese Omelette',
+    icon: '🍳',
+    multiplier: 3,
+    basePoints: 16,
+    desc: 'Egg + Cheese',
+    check: (counts, ingredients) => {
+      const hasEgg = ingredients.some(i => i.id === 'egg');
+      const hasCheese = ingredients.some(i => i.id === 'cheese');
+      return hasEgg && hasCheese;
+    }
+  },
+  {
     id: 'fish_and_chips',
     name: 'Classic Fish and Chips',
     icon: '🍟',
