@@ -1,32 +1,11 @@
+import { PROTEIN_TIERS, getProteinTierBonus } from './recipeTiers.js';
+
 export const RECIPE_BOOK = [
-  // --- NAMED CLASSIC REAL-LIFE DISHES ---
-  {
-    id: 'stir_fry_beef',
-    name: 'Sautéed Beef & Veggies',
-    icon: '🥘',
-    multiplier: 4,
-    basePoints: 25,
-    desc: 'Beef + Rice/Potato + Onion/Tomato',
-    check: (counts, ingredients) => {
-      const hasBeef = ingredients.some(i => i.id === 'beef');
-      const hasCarb = counts.carbs > 0;
-      const hasVeg = counts.vegetable > 0;
-      return hasBeef && hasCarb && hasVeg;
-    }
-  },
-  {
-    id: 'chicken_rice_veggies',
-    name: 'Chicken Rice Bowl',
-    icon: '🍲',
-    multiplier: 3,
-    basePoints: 20,
-    desc: 'Chicken + Rice + Any Vegetable',
-    check: (counts, ingredients) => {
-      const hasChicken = ingredients.some(i => i.id === 'chicken');
-      const hasRice = ingredients.some(i => i.id === 'rice');
-      return hasChicken && hasRice && counts.vegetable > 0;
-    }
-  },
+  // --- SPECIFIC COMBO RECIPES ---
+  // Requieren un ingrediente extra distintivo (pasta, salsa, etc.) mas alla
+  // de solo "proteina + lado". Tienen prioridad sobre el plato generico por
+  // nivel de proteina, y ademas reciben el bono de nivel si la proteina
+  // presente ya fue mejorada en el Supermarket.
   {
     id: 'pasta_bolognese',
     name: 'Classic Beef Pasta',
@@ -42,19 +21,6 @@ export const RECIPE_BOOK = [
     }
   },
   {
-    id: 'veggie_omelette',
-    name: 'Cheesy Veggie Omelette',
-    icon: '🍳',
-    multiplier: 3,
-    basePoints: 15,
-    desc: 'Egg + Vegetable + Cheese/Butter',
-    check: (counts, ingredients) => {
-      const hasEgg = ingredients.some(i => i.id === 'egg');
-      const hasDairy = counts.dairy > 0;
-      return hasEgg && counts.vegetable > 0 && hasDairy;
-    }
-  },
-  {
     id: 'garden_soup',
     name: 'Hearty Garden Soup',
     icon: '🥣',
@@ -64,20 +30,6 @@ export const RECIPE_BOOK = [
     check: (counts, ingredients) => {
       const uniqueVegs = new Set(ingredients.filter(i => i.type === 'vegetable').map(i => i.id));
       return uniqueVegs.size >= 3;
-    }
-  },
-
-  // --- VEGAN DISHES (Vegetarian Deck) ---
-  {
-    id: 'vegan_stir_fry',
-    name: 'Sautéed Tofu & Veggies',
-    icon: '🥘',
-    multiplier: 4,
-    basePoints: 25,
-    desc: 'Plant Protein + Rice/Potato + Onion/Tomato',
-    check: (counts, ingredients) => {
-      const hasPlantProtein = ingredients.some(i => i.tags && i.tags.includes('plant_protein'));
-      return hasPlantProtein && counts.carbs > 0 && counts.vegetable > 0;
     }
   },
   {
@@ -92,19 +44,6 @@ export const RECIPE_BOOK = [
       const hasPlantProtein = ingredients.some(i => i.tags && i.tags.includes('plant_protein'));
       const hasTomato = ingredients.some(i => i.id === 'tomato');
       return hasPasta && hasPlantProtein && hasTomato;
-    }
-  },
-  {
-    id: 'vegan_scramble',
-    name: 'Vegan Tofu Scramble',
-    icon: '🍳',
-    multiplier: 3,
-    basePoints: 15,
-    desc: 'Plant Protein + Vegetable + Vegan Cheese/Butter',
-    check: (counts, ingredients) => {
-      const hasPlantProtein = ingredients.some(i => i.tags && i.tags.includes('plant_protein'));
-      const hasVeganDairy = ingredients.some(i => i.tags && i.tags.includes('vegan') && i.type === 'dairy');
-      return hasPlantProtein && counts.vegetable > 0 && hasVeganDairy;
     }
   },
 
@@ -164,14 +103,16 @@ export const RECIPE_BOOK = [
 ];
 
 export class DishEvaluator {
-  static evaluate(selectedCards, activeDiets = []) {
+  // proteinLevels: { beef: 1-3, chicken: 1-3, ... } -- ver recipeTiers.js.
+  // Determina que version (Home Cook / especifica / avanzada) de un plato
+  // generico basado en proteina se sirve.
+  static evaluate(selectedCards, activeDiets = [], proteinLevels = {}) {
     if (!selectedCards || selectedCards.length === 0) {
       return this.invalidDish("Empty Plate");
     }
 
     // Regla dura: si CUALQUIER carta seleccionada esta congelada o podrida,
-    // el plato COMPLETO es invalido -- ya no se descarta solo esa carta y se
-    // evalua el resto, un solo ingrediente en mal estado arruina el plato.
+    // el plato COMPLETO es invalido.
     const hasSpoiledCard = selectedCards.some(c => c.state === 'frozen' || c.state === 'rotten');
     if (hasSpoiledCard) {
       return this.invalidDish("Spoiled Ingredient");
@@ -179,19 +120,15 @@ export class DishEvaluator {
 
     const validCards = selectedCards;
 
-    // Category counters
     const counts = { carbs: 0, vegetable: 0, protein: 0, spice: 0, dairy: 0, sauce: 0, special: 0 };
     validCards.forEach(c => {
       if (counts[c.type] !== undefined) counts[c.type]++;
       else counts.special++;
     });
 
-    // Regla: no mezclar ingredientes DISTINTOS dentro de las categorias
-    // "estructurales" (carbs, protein) -- ej. pescado+carne, arroz+pasta no
-    // van juntos en la mayoria de los casos. La dieta "All-You-Can-Eat"
-    // (allowDuplicateCategories) permite saltarse esta regla. Repetir el
-    // MISMO ingrediente (ej. 2x Arroz) siempre esta permitido y se marca
-    // como porcion "XL".
+    // Regla: no mezclar ingredientes DISTINTOS dentro de carbs/protein (ej.
+    // pescado+carne, arroz+pasta), salvo la dieta "All-You-Can-Eat". Repetir
+    // el MISMO ingrediente (ej. 2x Arroz) esta permitido y se marca "(XL)".
     const allowMixedCategories = activeDiets.some(d => d.allowDuplicateCategories);
     let isXL = false;
 
@@ -209,34 +146,50 @@ export class DishEvaluator {
 
     const xlNote = isXL ? " (XL)" : "";
 
-    // Check for Emotional / Metaphorical modifiers in the dish
     let emotionalNote = "";
     if (validCards.some(i => i.id === 'love')) emotionalNote = " (Made with Love)";
     else if (validCards.some(i => i.id === 'patience')) emotionalNote = " (Cooked with Patience)";
     else if (validCards.some(i => i.id === 'grandma_hug')) emotionalNote = " (Grandma's Style)";
 
     const validIndices = selectedCards.map((_, i) => i);
+    const tierBonus = getProteinTierBonus(validCards, proteinLevels);
 
-    // 1. Check Specific Named Recipes
+    // 1. Specific combo named recipes (pasta, curry, sauces...). Reciben el
+    // bono de nivel de proteina si la proteina del plato ya fue mejorada.
     for (const recipe of RECIPE_BOOK) {
       if (recipe.check(counts, validCards)) {
         return {
           name: `${recipe.name}${emotionalNote}${xlNote}`,
           icon: recipe.icon,
-          multiplier: recipe.multiplier,
-          basePoints: recipe.basePoints,
+          multiplier: recipe.multiplier + tierBonus.multBonus,
+          basePoints: recipe.basePoints + tierBonus.chipsBonus,
           validCardIndices: validIndices
         };
       }
     }
 
-    // 2. Descriptive Household Plate (Full Trio: Protein + Carb + Veggie)
-    if (counts.protein > 0 && counts.carbs > 0 && counts.vegetable > 0) {
-      const mainProtein = validCards.find(i => i.type === 'protein')?.name || 'Protein';
-      const mainCarb = validCards.find(i => i.type === 'carbs')?.name || 'Carbs';
+    // 2. Plato generico basado en la proteina: Home Cook -> nombre
+    // especifico -> version avanzada, segun el nivel comprado en la tienda.
+    if (counts.protein > 0 && (counts.carbs > 0 || counts.vegetable > 0)) {
+      const proteinCard = validCards.find(i => i.type === 'protein' && PROTEIN_TIERS[i.id]);
 
+      if (proteinCard) {
+        const level = proteinLevels[proteinCard.id] || 1;
+        const tier = PROTEIN_TIERS[proteinCard.id][level - 1];
+        return {
+          name: `${tier.name}${emotionalNote}${xlNote}`,
+          icon: tier.icon,
+          multiplier: tier.multiplier,
+          basePoints: tier.basePoints,
+          validCardIndices: validIndices
+        };
+      }
+
+      // Proteina sin niveles definidos (fallback generico de siempre).
+      const mainProtein = validCards.find(i => i.type === 'protein')?.name || 'Protein';
+      const mainSide = validCards.find(i => i.type === 'carbs' || i.type === 'vegetable')?.name || 'Side';
       return {
-        name: `${mainProtein} with ${mainCarb} and Veggies${emotionalNote || " (Home Cooked)"}${xlNote}`,
+        name: `${mainProtein} with ${mainSide}${emotionalNote || " (Home Cooked)"}${xlNote}`,
         icon: '🍽️',
         multiplier: 2,
         basePoints: 10,
@@ -244,21 +197,7 @@ export class DishEvaluator {
       };
     }
 
-    // 3. Basic Home Meal (Protein + Carb OR Protein + Veggie)
-    if ((counts.protein > 0 && counts.carbs > 0) || (counts.protein > 0 && counts.vegetable > 0)) {
-      const mainProtein = validCards.find(i => i.type === 'protein')?.name || 'Protein';
-      const side = validCards.find(i => i.type === 'carbs' || i.type === 'vegetable')?.name || 'Side';
-
-      return {
-        name: `${mainProtein} with ${side}${emotionalNote}${xlNote}`,
-        icon: '🍱',
-        multiplier: 2,
-        basePoints: 8,
-        validCardIndices: validIndices
-      };
-    }
-
-    // 4. CHECK ACTIVE DIET CARDS (Validates non-standard combos)
+    // 3. CHECK ACTIVE DIET CARDS (Validates non-standard combos)
     const hasKeto = activeDiets.some(d => d.id === 'keto');
     if (hasKeto && counts.protein >= 2 && counts.carbs === 0) {
       return {
@@ -281,7 +220,7 @@ export class DishEvaluator {
       };
     }
 
-    // 5. DOES NOT MAKE REAL-LIFE SENSE -> INEDIBLE MIX
+    // 4. DOES NOT MAKE REAL-LIFE SENSE -> INEDIBLE MIX
     return this.invalidDish("Inedible Mix");
   }
 
@@ -291,7 +230,7 @@ export class DishEvaluator {
       icon: '🤢',
       multiplier: 0,
       basePoints: 0,
-      validCardIndices: [] // Cards won't score
+      validCardIndices: []
     };
   }
 }

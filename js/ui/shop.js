@@ -4,9 +4,10 @@
 // directamente. Cuando el jugador confirma "Next Level", emite 'level:next'
 // y es game.js quien decide que hacer (incrementar semana, reiniciar).
 
-import { state, KITCHENWARE_DB, CHEF_SKILLS_DB } from '../state.js';
+import { state, KITCHENWARE_DB, CHEF_SKILLS_DB, UPGRADABLE_PROTEINS, PROTEIN_UPGRADE_COSTS, PROTEIN_NAMES } from '../state.js';
 import { BASE_INGREDIENTS, SUPERMARKET_INGREDIENTS } from '../data/ingredients.js';
 import { BASE_DIETS } from '../data/diets.js';
+import { PROTEIN_TIERS } from '../data/recipeTiers.js';
 import { bus } from '../eventBus.js';
 
 // Las ofertas de la tienda se generan una vez al abrir (o al re-rollar) y
@@ -75,8 +76,29 @@ function generateOffers() {
     kitchenware: pickRandomUnique(KITCHENWARE_DB, 2).map(item => ({ item, bought: false })),
     diets: pickRandomUnique(BASE_DIETS, 2).map(item => ({ item, bought: false })),
     skills: pickRandomUnique(CHEF_SKILLS_DB, 2).map(item => ({ item, bought: false })),
-    ingredients: Array.from({ length: 4 }, () => ({ item: generateShopCard(), bought: false }))
+    ingredients: Array.from({ length: 4 }, () => ({ item: generateShopCard(), bought: false })),
+    recipeUpgrades: generateRecipeUpgradeOffers()
   };
+}
+
+// Ofrece hasta 3 proteinas al azar (de las que el mazo actual realmente usa)
+// que todavia no esten en el nivel maximo, para subirlas de nivel con Forks.
+function generateRecipeUpgradeOffers() {
+  const pool = UPGRADABLE_PROTEINS[state.selectedDeckType] || UPGRADABLE_PROTEINS.regular;
+  const upgradable = pool.filter(id => (state.proteinLevels[id] || 1) < 3);
+  const chosen = pickRandomUnique(upgradable, 3);
+
+  return chosen.map(proteinId => {
+    const currentLevel = state.proteinLevels[proteinId] || 1;
+    const nextLevel = currentLevel + 1;
+    return {
+      proteinId,
+      currentLevel,
+      nextLevel,
+      cost: PROTEIN_UPGRADE_COSTS[nextLevel],
+      bought: false
+    };
+  });
 }
 
 // El reroll (maquina de casino) cuesta 1 Fork y vuelve a barajar Kitchenware,
@@ -120,6 +142,38 @@ function renderOfferCard(containerEl, offer, kind) {
   containerEl.appendChild(cardEl);
 }
 
+function renderRecipeUpgradeCard(containerEl, offer) {
+  const proteinLabel = PROTEIN_NAMES[offer.proteinId]?.name || offer.proteinId;
+  const currentTier = PROTEIN_TIERS[offer.proteinId][offer.currentLevel - 1];
+  const nextTier = PROTEIN_TIERS[offer.proteinId][offer.nextLevel - 1];
+
+  const cardEl = document.createElement('div');
+  cardEl.className = `shop-item${offer.bought ? ' shop-item-bought' : ''}`;
+  cardEl.innerHTML = `
+    <div class="shop-item-icon">${nextTier.icon}</div>
+    <div class="shop-item-name">${proteinLabel} Lvl ${offer.nextLevel}</div>
+    <div class="shop-item-desc">${currentTier.name} ➜ ${nextTier.name}<br>${nextTier.multiplier}x mult, ${nextTier.basePoints} pts</div>
+    <button class="shop-buy-btn" ${offer.bought ? 'disabled' : ''}>${offer.bought ? '✅ Upgraded' : `Upgrade 🍴${offer.cost}`}</button>
+  `;
+
+  if (!offer.bought) {
+    cardEl.querySelector('.shop-buy-btn').onclick = () => buyRecipeUpgrade(offer);
+  }
+
+  containerEl.appendChild(cardEl);
+}
+
+function buyRecipeUpgrade(offer) {
+  if (state.forks < offer.cost) return alert("Not enough Forks!");
+
+  state.forks -= offer.cost;
+  state.proteinLevels[offer.proteinId] = offer.nextLevel;
+  offer.bought = true;
+
+  bus.emit('state:changed');
+  renderShopItems();
+}
+
 function renderShopItems() {
   document.getElementById('ui-shop-forks').innerText = state.forks;
 
@@ -127,16 +181,24 @@ function renderShopItems() {
   const dietsEl = document.getElementById('ui-shop-diets');
   const skillsEl = document.getElementById('ui-shop-skills');
   const ingredientsEl = document.getElementById('ui-shop-ingredients');
+  const recipeUpgradesEl = document.getElementById('ui-shop-recipe-upgrades');
 
   kitchenwareEl.innerHTML = '';
   dietsEl.innerHTML = '';
   skillsEl.innerHTML = '';
   ingredientsEl.innerHTML = '';
+  recipeUpgradesEl.innerHTML = '';
 
   shopOffers.kitchenware.forEach(offer => renderOfferCard(kitchenwareEl, offer, 'kitchenware'));
   shopOffers.diets.forEach(offer => renderOfferCard(dietsEl, offer, 'diet'));
   shopOffers.skills.forEach(offer => renderOfferCard(skillsEl, offer, 'skill'));
   shopOffers.ingredients.forEach(offer => renderOfferCard(ingredientsEl, offer, 'ingredient'));
+
+  if (shopOffers.recipeUpgrades.length === 0) {
+    recipeUpgradesEl.innerHTML = `<div class="runinfo-empty-note">All recipes for this deck are already at max level! 👑</div>`;
+  } else {
+    shopOffers.recipeUpgrades.forEach(offer => renderRecipeUpgradeCard(recipeUpgradesEl, offer));
+  }
 }
 
 function buyOffer(offer, kind, cost) {

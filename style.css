@@ -1077,7 +1077,17 @@
 
     .shop-item-icon { font-size: 1.6rem; }
     .shop-item-name { font-weight: 700; font-size: 0.78rem; margin-top: 2px; }
-    .shop-item-desc { font-size: 0.66rem; color: #666; margin: 2px 0 6px 0; min-height: 22px; }
+    .shop-item-desc { font-size: 0.64rem; color: #666; margin: 2px 0 6px 0; min-height: 32px; line-height: 1.25; }
+
+    .shop-section-recipes {
+      border: 2px solid #d4a359;
+      background: rgba(255, 248, 231, 0.7);
+    }
+
+    .shop-section-recipes .shop-subsection-title {
+      color: #a3760e;
+      border-bottom-color: #d4a359;
+    }
 
     .shop-buy-btn {
       background: var(--accent-green);

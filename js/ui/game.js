@@ -15,9 +15,10 @@
 //                                                     ver mas abajo) para refrescar
 //                                                     slots/HUD cuando shop.js compra algo
 
-import { state, MAX_HAND_SIZE, TYPE_ORDER } from '../state.js';
+import { state, MAX_HAND_SIZE, TYPE_ORDER, UPGRADABLE_PROTEINS, PROTEIN_NAMES } from '../state.js';
 import { BASE_INGREDIENTS, VEGETARIAN_PROTEINS, VEGAN_DAIRY, SUPERMARKET_INGREDIENTS } from '../data/ingredients.js';
 import { DishEvaluator, RECIPE_BOOK } from '../data/dishes.js';
+import { PROTEIN_TIERS } from '../data/recipeTiers.js';
 import { LevelManager } from '../data/levels.js';
 import { bus } from '../eventBus.js';
 import { getCategoryLetter, shuffle, sleep } from '../utils.js';
@@ -139,12 +140,13 @@ export function initGameScreen() {
   };
 
   document.getElementById('ui-opt-restart-run').onclick = () => {
-    if (!confirm("Restart your current run from Level 1? Your Forks, Kitchenware, Diets and Skills will be lost.")) return;
+    if (!confirm("Restart your current run from Level 1? Your Forks, Kitchenware, Diets, Skills and Recipe Levels will be lost.")) return;
     state.week = 1;
     state.forks = 0;
     state.kitchenware = [];
     state.activeDiets = [];
     state.chefSkills = [];
+    state.proteinLevels = { beef: 1, chicken: 1, egg: 1, fish: 1, seitan: 1, tofu: 1, tempeh: 1, veggie_burger: 1 };
     document.getElementById('ui-options-modal').classList.add('hidden');
     document.getElementById('ui-shop').classList.add('hidden');
     initGame();
@@ -639,6 +641,13 @@ export function initGameScreen() {
         <div class="card-title">${card.name}</div>
         <div class="card-points">${card.multiplierBonus ? `${card.multiplierBonus}x` : `+${card.points}`}</div>
       `;
+      miniEl.style.cursor = 'pointer';
+      // Tocar la carta en la tabla de cortar tambien la quita de la seleccion
+      // -- mismo efecto que tocarla de nuevo en la mano.
+      miniEl.onclick = () => {
+        if (state.isAnimating) return;
+        toggleSelectCard(idx);
+      };
       potEl.appendChild(miniEl);
     });
   }
@@ -696,7 +705,7 @@ export function initGameScreen() {
     }
 
     const selectedCards = state.selectedIndices.map(i => state.hand[i]);
-    const dish = DishEvaluator.evaluate(selectedCards, state.activeDiets);
+    const dish = DishEvaluator.evaluate(selectedCards, state.activeDiets, state.proteinLevels);
 
     let totalMult = dish.multiplier;
     selectedCards.forEach(c => {
@@ -775,7 +784,7 @@ export function initGameScreen() {
     document.getElementById('ui-discard-btn').disabled = true;
 
     const selectedCards = state.selectedIndices.map(i => state.hand[i]);
-    const dish = DishEvaluator.evaluate(selectedCards, state.activeDiets);
+    const dish = DishEvaluator.evaluate(selectedCards, state.activeDiets, state.proteinLevels);
     const potEl = document.getElementById('ui-cooking-pot');
 
     const bannerDish = document.getElementById('ui-banner-dish');
@@ -1008,6 +1017,7 @@ export function initGameScreen() {
         state.kitchenware = [];
         state.activeDiets = [];
         state.chefSkills = [];
+        state.proteinLevels = { beef: 1, chicken: 1, egg: 1, fish: 1, seitan: 1, tofu: 1, tempeh: 1, veggie_burger: 1 };
         initGame();
       }
     }
@@ -1114,6 +1124,23 @@ export function initGameScreen() {
         `;
       });
     }
+
+    html += `<div class="runinfo-section-title">Recipe Levels</div>`;
+    const relevantProteins = UPGRADABLE_PROTEINS[state.selectedDeckType] || UPGRADABLE_PROTEINS.regular;
+    relevantProteins.forEach(proteinId => {
+      const level = state.proteinLevels[proteinId] || 1;
+      const tier = PROTEIN_TIERS[proteinId][level - 1];
+      const proteinLabel = PROTEIN_NAMES[proteinId]?.name || proteinId;
+      html += `
+        <div class="recipe-card">
+          <div style="font-size:1.6rem;">${tier.icon}</div>
+          <div>
+            <div style="font-weight:bold; font-size:0.95rem;">${proteinLabel}: ${tier.name} (Lvl ${level}/3)</div>
+            <div style="font-size:0.8rem; color:#666;">${tier.basePoints} base pts, ${tier.multiplier}x mult</div>
+          </div>
+        </div>
+      `;
+    });
 
     html += `<div class="runinfo-section-title">Dish Values</div>`;
     RECIPE_BOOK.forEach(r => {

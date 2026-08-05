@@ -74,6 +74,29 @@ export const CHEF_SKILLS_DB = [
   { id: 'duplicate', name: 'Duplication', icon: '👯', costForks: 4, desc: 'Duplicate 1 selected card' }
 ];
 
+// Proteinas mejorables (4 pares regular/vegano, mismo orden que el swap del
+// mazo vegetariano: beef<->seitan, chicken<->tofu, egg<->tempeh, fish<->veggie_burger).
+// Nivel 1 = Home Cook (fallback generico), Nivel 2 = plato con nombre propio,
+// Nivel 3 = version avanzada. Se sube en el Supermarket con Forks.
+export const UPGRADABLE_PROTEINS = {
+  regular: ['beef', 'chicken', 'egg', 'fish'],
+  vegetarian: ['seitan', 'tofu', 'tempeh', 'veggie_burger']
+};
+
+// Costo en Forks para llegar al nivel indicado (index = nivel destino).
+export const PROTEIN_UPGRADE_COSTS = [null, null, 6, 10];
+
+export const PROTEIN_NAMES = {
+  beef: { name: 'Beef', icon: '🥩' },
+  chicken: { name: 'Chicken', icon: '🍗' },
+  egg: { name: 'Egg', icon: '🥚' },
+  fish: { name: 'Fish', icon: '🐟' },
+  seitan: { name: 'Seitan', icon: '🫘' },
+  tofu: { name: 'Tofu', icon: '🧊' },
+  tempeh: { name: 'Tempeh', icon: '🥜' },
+  veggie_burger: { name: 'Veggie Patty', icon: '🍔' }
+};
+
 export let state = {
   week: 1,
   targetScore: 100,
@@ -93,5 +116,11 @@ export let state = {
   sortScoreAscending: false,
   selectedDeckType: 'regular',
   reduceMotion: false,
-  discardedCards: []
+  discardedCards: [],
+  // Nivel de cada proteina mejorable, persiste durante todo el run (no se
+  // reinicia por nivel, solo con "Restart Run" en Options).
+  proteinLevels: {
+    beef: 1, chicken: 1, egg: 1, fish: 1,
+    seitan: 1, tofu: 1, tempeh: 1, veggie_burger: 1
+  }
 };
