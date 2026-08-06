@@ -759,21 +759,26 @@
       100% { transform: scale(1) translateY(0); }
     }
 
-    /* Live Chips x Mult display, centered over the cutting board while cooking */
+    /* Live Chips x Mult display, anclado a la derecha del grupo de Diets
+       (antes tapaba la tabla de cortar en el centro del stage) */
+    #ui-diet-slot-group {
+      position: relative;
+    }
+
     .live-score-display {
       position: absolute;
-      top: 46%;
-      left: 50%;
-      transform: translate(-50%, -50%);
+      top: 50%;
+      right: 2px;
+      transform: translateY(-50%);
       z-index: 50;
       display: flex;
       align-items: center;
-      gap: 8px;
-      background: rgba(20, 14, 10, 0.88);
-      border: 3px solid #f2cc8f;
-      border-radius: 16px;
-      padding: 8px 16px;
-      box-shadow: 0 8px 22px rgba(0,0,0,0.4);
+      gap: 3px;
+      background: rgba(20, 14, 10, 0.92);
+      border: 2px solid #f2cc8f;
+      border-radius: 8px;
+      padding: 3px 6px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.35);
       pointer-events: none;
     }
 
@@ -781,23 +786,32 @@
 
     .live-score-chips {
       color: #4fc3f7;
-      font-size: 1.7rem;
+      font-size: 0.85rem;
       font-weight: 900;
-      text-shadow: 0 2px 0 rgba(0,0,0,0.4);
+      text-shadow: 0 1px 0 rgba(0,0,0,0.4);
     }
 
-    .live-score-x { color: #f2cc8f; font-size: 1.1rem; font-weight: 700; }
+    .live-score-x { color: #f2cc8f; font-size: 0.65rem; font-weight: 700; }
 
     .live-score-mult {
       color: #ff6b6b;
-      font-size: 1.7rem;
+      font-size: 0.85rem;
       font-weight: 900;
-      text-shadow: 0 2px 0 rgba(0,0,0,0.4);
+      text-shadow: 0 1px 0 rgba(0,0,0,0.4);
     }
 
     .live-score-display.value-pop .live-score-chips,
     .live-score-display.value-pop .live-score-mult {
       animation: liveScorePop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    /* El texto flotante que explica cada bono (nombre + puntos) crece hacia
+       la izquierda desde el borde derecho del marcador, para no salirse de
+       la pantalla ya que el marcador esta pegado al borde derecho. */
+    .live-score-display .floating-text {
+      right: 0;
+      left: auto;
+      text-align: right;
     }
 
     @keyframes liveScorePop {
@@ -1321,11 +1335,12 @@
     /* Floating Text Pops */
     .floating-text {
       position: absolute;
-      font-size: 1.5rem;
+      font-size: 1.05rem;
       font-weight: 800;
       color: #ffd166;
       text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000;
       pointer-events: none;
+      white-space: nowrap;
       z-index: 60;
       animation: floatUp 0.8s ease-out forwards;
     }

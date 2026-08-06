@@ -355,6 +355,11 @@ export function initGameScreen() {
   }
 
   function processTurnCardStateUpdates() {
+    // Devuelve las cartas que TERMINARON de descongelarse este turno, para
+    // que quien llame pueda premiar la paciencia del jugador y mostrarlo en
+    // la secuencia de puntuacion ("Unfrozen! +30 pts").
+    const thawedCards = [];
+
     state.hand.forEach(card => {
       if (card.state === 'expiring' && !card.usedThisTurn) {
         card.state = 'rotten';
@@ -365,11 +370,13 @@ export function initGameScreen() {
           card.frozenTimer -= 1;
         } else {
           card.state = 'normal';
-          card.points = (card.points || 0) + 50;
+          thawedCards.push(card);
         }
       }
       card.usedThisTurn = false;
     });
+
+    return thawedCards;
   }
 
   function initializeStartingHand(deck, deckType) {
@@ -776,6 +783,28 @@ export function initGameScreen() {
     flashEl.classList.add('flash-active');
   }
 
+  // Premia la paciencia: cuando una carta congelada termina de descongelarse
+  // se le suman 30 pts al score y se muestra "Unfrozen! +30 pts" sobre ella.
+  // Se llama DESPUES de drawHand() para que la mano ya este redibujada y el
+  // indice de la carta en el DOM sea el correcto.
+  async function showThawedCardRewards(thawedCards) {
+    if (!thawedCards || thawedCards.length === 0) return;
+
+    for (const card of thawedCards) {
+      const idx = state.hand.indexOf(card);
+      const cardEl = idx > -1 ? document.querySelector(`#ui-hand .card[data-index="${idx}"]`) : null;
+      if (cardEl) {
+        triggerFloatingText(`${card.name} Unfrozen! +30 pts`, cardEl);
+        spawnParticleBurst(cardEl);
+        cardEl.classList.add('card-score-punch');
+        setTimeout(() => cardEl.classList.remove('card-score-punch'), 350);
+      }
+    }
+
+    updateHUD();
+    await wait(500);
+  }
+
   async function cookSelected() {
     if (state.handsLeft <= 0 || state.isAnimating) return;
     state.isAnimating = true;
@@ -809,6 +838,8 @@ export function initGameScreen() {
     await wait(300);
 
     // --- FASE 1: cada carta seleccionada, una por una ---
+    const liveScoreAnchor = document.getElementById('ui-live-score');
+
     for (let i = 0; i < state.selectedIndices.length; i++) {
       const idx = state.selectedIndices[i];
       const card = state.hand[idx];
@@ -830,27 +861,27 @@ export function initGameScreen() {
 
         if (card.state === 'expiring' && card.drawnThisTurn) {
           cardPts += 25;
-          triggerFloatingText(`+25 FRESH BONUS!`, potCardEl);
+          triggerFloatingText(`${card.name} +25 FRESH BONUS!`, liveScoreAnchor);
         }
 
         if (card.state === 'gourmet') {
           mult += 0.5;
-          triggerFloatingText(`+0.5x GOURMET!`, potCardEl);
+          triggerFloatingText(`${card.name} +0.5x GOURMET!`, liveScoreAnchor);
         }
 
         if (card.multiplierBonus) {
           mult += card.multiplierBonus;
-          triggerFloatingText(`+${card.multiplierBonus}x MULT!`, potCardEl);
+          triggerFloatingText(`${card.name} +${card.multiplierBonus}x MULT!`, liveScoreAnchor);
         } else {
           chips += cardPts;
-          triggerFloatingText(`+${cardPts}`, potCardEl);
+          triggerFloatingText(`${card.name} +${cardPts}`, liveScoreAnchor);
         }
 
         potCardEl.classList.add('card-score-punch');
         updateLiveScore(chips, mult);
       } else {
         const failReason = card.state === 'frozen' ? 'FROZEN!' : (card.state === 'rotten' ? 'ROTTEN!' : 'TRASH!');
-        triggerFloatingText(`+0 ${failReason}`, potCardEl);
+        triggerFloatingText(`${card.name} +0 ${failReason}`, liveScoreAnchor);
         potCardEl.classList.remove('scoring-active');
         potCardEl.classList.add('trashed-card');
         potCardEl.classList.add('fly-trash');
@@ -877,8 +908,8 @@ export function initGameScreen() {
         if (slotEl) {
           slotEl.classList.add('slot-triggering');
           spawnParticleBurst(slotEl);
-          triggerFloatingText(effect.label, slotEl);
         }
+        triggerFloatingText(`${kw.name} ${effect.label}`, liveScoreAnchor);
 
         if (effect.chips) chips += effect.chips;
         if (effect.mult) mult += effect.mult;
@@ -906,8 +937,8 @@ export function initGameScreen() {
         if (slotEl) {
           slotEl.classList.add('slot-triggering');
           spawnParticleBurst(slotEl);
-          triggerFloatingText(effect.label, slotEl);
         }
+        triggerFloatingText(`${diet.name} ${effect.label}`, liveScoreAnchor);
 
         if (effect.chips) chips += effect.chips;
         if (effect.mult) mult += effect.mult;
@@ -957,9 +988,13 @@ export function initGameScreen() {
     potEl.innerHTML = '';
     state.isAnimating = false;
 
-    processTurnCardStateUpdates();
+    const thawedCards = processTurnCardStateUpdates();
+    if (thawedCards.length > 0) {
+      state.score += 30 * thawedCards.length;
+    }
     updateHUD();
     await drawHand();
+    await showThawedCardRewards(thawedCards);
     checkLevelEnd();
   }
 
@@ -995,9 +1030,13 @@ export function initGameScreen() {
     state.isAnimating = false;
     document.getElementById('ui-cooking-pot').innerHTML = '';
     
-    processTurnCardStateUpdates();
+    const thawedCards = processTurnCardStateUpdates();
+    if (thawedCards.length > 0) {
+      state.score += 30 * thawedCards.length;
+    }
     updateHUD();
     await drawHand();
+    await showThawedCardRewards(thawedCards);
   }
 
   function checkLevelEnd() {

@@ -9,22 +9,22 @@
 export const PROTEIN_TIERS = {
   // --- Mazo Regular ---
   beef: [
-    { name: 'Beef', icon: '🥘', multiplier: 3, basePoints: 18 },
+    { name: 'Sautéed Beef & Veggies', icon: '🥘', multiplier: 3, basePoints: 18 },
     { name: 'Beef Bourguignon', icon: '🍷', multiplier: 6, basePoints: 30 },
     { name: 'Wagyu Beef Wellington', icon: '👑', multiplier: 9, basePoints: 45 }
   ],
   chicken: [
-    { name: 'Chicken', icon: '🍗', multiplier: 3, basePoints: 18 },
-    { name: 'Crispy Chiken', icon: '🍗', multiplier: 6, basePoints: 30 },
-    { name: 'Roast Chicken Supreme', icon: '👑', multiplier: 9, basePoints: 45 }
+    { name: 'Chicken Rice Bowl', icon: '🍲', multiplier: 3, basePoints: 18 },
+    { name: 'Coq au Vin', icon: '🍷', multiplier: 6, basePoints: 30 },
+    { name: 'Truffled Roast Chicken Supreme', icon: '👑', multiplier: 9, basePoints: 45 }
   ],
   fish: [
-    { name: 'Pan-Seared Fish', icon: '🐟', multiplier: 3, basePoints: 18 },
+    { name: 'Pan-Seared Fish Plate', icon: '🐟', multiplier: 3, basePoints: 18 },
     { name: 'Miso Glazed Salmon', icon: '🍶', multiplier: 6, basePoints: 30 },
     { name: 'Omakase Sushi Platter', icon: '🍣', multiplier: 9, basePoints: 45 }
   ],
   egg: [
-    { name: 'Fried Egg', icon: '🍳', multiplier: 3, basePoints: 18 },
+    { name: 'Cheesy Veggie Omelette', icon: '🍳', multiplier: 3, basePoints: 18 },
     { name: 'Eggs Benedict', icon: '🍋', multiplier: 6, basePoints: 30 },
     { name: 'Soufflé Royale', icon: '👑', multiplier: 9, basePoints: 45 }
   ],
